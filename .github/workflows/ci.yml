@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the migration-immutability guard diffs against the base branch
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Repo guards
+        env:
+          GUARD_BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: pnpm guards
+
+  # Added in milestone M1, when the first migration exists: start the local Supabase
+  # stack (`supabase start`), apply migrations, run RLS and append-only tests.
+  # Needs no hosted credentials; the CLI generates throwaway keys for the local stack.

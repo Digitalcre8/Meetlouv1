@@ -1,0 +1,26 @@
+{
+  "name": "meetlou",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "typecheck": "tsc --noEmit && pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "guards": "bash scripts/check-guards.sh",
+    "verify": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm guards"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}
