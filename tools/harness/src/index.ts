@@ -7,6 +7,7 @@ export * from './local-env';
 export * from './replay';
 export * from './replay-sendgrid';
 export * from './seed';
+export * from './timeline-demo';
 export * from './serve';
 export * from './twilio-sign';
 export * from './wav';

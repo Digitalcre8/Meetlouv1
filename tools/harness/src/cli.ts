@@ -20,6 +20,7 @@ import { localEnv } from './local-env';
 import { replayFixture, runScenario } from './replay';
 import { replaySendgrid } from './replay-sendgrid';
 import { seedArmstrong, seedVars } from './seed';
+import { seedTimelineDemo } from './timeline-demo';
 import { serveFunctions, stopFunctions } from './serve';
 
 const [command, name, ...flags] = process.argv.slice(2);
@@ -68,6 +69,15 @@ async function main(): Promise<number> {
         writeBaseline(report);
         console.log(`baseline updated for ${report.provider} (${promptFingerprint()})`);
       }
+      return 0;
+    }
+    case 'timeline-demo': {
+      const result = await seedTimelineDemo(env, await seedArmstrong(env));
+      console.log(
+        result.created
+          ? 'timeline demo data added to MTR-1001'
+          : 'timeline demo data already present',
+      );
       return 0;
     }
     case 'stop':

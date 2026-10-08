@@ -147,6 +147,20 @@ describe('twilio-voice: a routed call', () => {
       call?.started_at.getTime() ?? 0,
     );
 
+    // The webhook's capture is one event on the timeline (the caller is Sarah, the client, so it is
+    // hers to see) and one audit row. No webhook code wrote either: the database did.
+    const callId = (
+      await run<{ id: string }>(owner, `select id from calls where call_sid = $1`, [callSid])
+    )[0]?.id;
+    expect(
+      await run(owner, `select kind, visibility, actor_kind from events where subject_id = $1`, [
+        callId,
+      ]),
+    ).toEqual([{ kind: 'call.received', visibility: 'client', actor_kind: 'system' }]);
+    expect(await run(owner, `select action from audit_log where object_id = $1`, [callId])).toEqual(
+      [{ action: 'call.captured' }],
+    );
+
     const dial = run_.steps[1]?.result.body ?? '';
     expect(dial).toContain(`<Number>${ARMSTRONG.feeEarner.phoneE164}</Number>`);
     expect(dial).toContain(
@@ -172,6 +186,14 @@ describe('twilio-voice: a routed call', () => {
     const outcome = await runScenario('duplicate-delivery', env);
     expect(outcome.steps.flatMap((s) => s.failures)).toEqual([]);
     expect(await callsFor(outcome.vars['callSid'] ?? '')).toBe(1);
+    // Three deliveries, one event and one audit row.
+    const callId = (
+      await run<{ id: string }>(owner, `select id from calls where call_sid = $1`, [
+        outcome.vars['callSid'],
+      ])
+    )[0]?.id;
+    expect(await count(`select count(*) n from events where subject_id = $1`, [callId])).toBe(1);
+    expect(await count(`select count(*) n from audit_log where object_id = $1`, [callId])).toBe(1);
   });
 });
 

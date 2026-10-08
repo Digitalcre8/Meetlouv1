@@ -90,12 +90,16 @@ Edge function `sendgrid-inbound` over `packages/capture`. **Configure SendGrid w
 - **Done when, with an injected clock:** a matter closed with an N-year policy is scheduled for `closed_at + N`; a matter is not erased the day before and is erased the day of; a matter on hold is never erased and a hold placed **after** scheduling but before the run blocks it; releasing a hold lets the next run erase it; storage objects and rows are both gone, and the runner is safe to re-run after a crash between the two; the `evidence.erased` audit entry has counts and ids and no content (test greps the `detail` for any body, filename or address); `authenticated` and `service_role` cannot call the erase functions; `audit_log` rows themselves survive erasure.
 - **Verified by:** time-travel tests against the local stack; a crash-injection test that aborts after storage deletion and re-runs.
 
-## M8. Internal timeline page
+## M8. Shared timeline and the internal verification page (built)
 
-One page, `/internal/matters/[id]/timeline`, anon key + the user's session, RLS only. Lists `matter_timeline`, shows consent state, dual-channel status, mono warnings, read receipts, and marks reads when an event is opened. Renders text only: no HTML email rendering, no inline attachments.
+Migration `0017_timeline`. Events are written by `AFTER INSERT` triggers on the capture tables (`calls`, `call_recordings`, `emails`, `attachments`, `transcripts`, `generated_outputs`, `approvals`), so a capture path cannot forget its event and cannot write two. Visibility is decided once, in `app.capture_visibility` (a capture is client-visible only if the client is a party to it: their phone number, or their email address with SPF or DKIM passing) and `app.visibility_allows` (the nesting `firm` ⊂ `client` ⊂ `chain`), which RLS and the preview function share. Findings about a capture (mono audio, suppressed recording) remain separate annotation events.
 
-- **Done when:** a fee earner of firm A sees their matter's timeline; the same page for firm B's matter id returns not-found (test); a bundle of grep checks proves no service role symbol is in the client bundle; the page makes no write other than a read receipt.
-- **Verified by:** Vitest for loaders; one Playwright test only if the read-receipt interaction needs a browser.
+- Timeline API: view `matter_timeline` (security invoker, so RLS filters it per caller) read through `getMatterTimeline`. Actor ids are masked for participants.
+- Read receipts: `receipts` rows with the reader's capacity snapshotted (`reader_role`); the first read stands; an event the caller cannot see cannot be marked read (`markEventRead`).
+- Audit log: every capture, approval and withdrawal is audited by trigger. Every recording access goes through the `recording-access` function (`packages/access`), which writes `recording.accessed` before signing a 60 second URL; direct reads of the `recordings` bucket are closed.
+- Verification page: `/internal/timeline` and `/internal/timeline/[matterId]`. The firm column is the real RLS result; the client and chain columns use `matter_timeline_as` (same rule), and tests prove they equal what real participant logins receive. `pnpm timeline:demo` fills MTR-1001 through the real capture paths.
+- **Done when:** the same query as fee earner, client and chain participant returns three nested, different sets (`supabase/tests/timeline.test.ts`); unapproved or firm-only items never reach the other two; every recording access leaves an audit row (`access.test.ts`).
+- **Not done, deliberately:** read-receipt interaction in a UI, HTML email rendering, evidence bundle export. The emails, attachments and transcripts buckets are still directly readable by the firm and are not yet access-audited.
 
 ## Cross-cutting acceptance: the replay suite
 

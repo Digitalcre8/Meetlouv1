@@ -321,7 +321,7 @@ describe('inbound email: idempotent on Message-ID', () => {
     const after = await totals();
     expect(after.emails).toBe(before.emails + 1);
     expect(after.events).toBe(before.events + 1);
-    expect(after.audit).toBe(before.audit); // identical bytes: not even worth a flag
+    expect(after.audit).toBe(before.audit + 1); // one capture, one audit row; identical bytes are not worth a flag
 
     const row = await emailByMessageId(vars['messageId'] ?? '');
     const listing =

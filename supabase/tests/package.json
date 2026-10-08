@@ -8,6 +8,7 @@
     "test:db": "vitest run"
   },
   "dependencies": {
+    "@meetlou/access": "workspace:*",
     "@meetlou/domain": "workspace:*",
     "@meetlou/harness": "workspace:*",
     "@meetlou/pipeline": "workspace:*",

@@ -184,7 +184,7 @@ describe('recording-status: dual-channel, verified from the bytes', () => {
     );
 
     expect(await eventKinds(row?.id ?? '')).toEqual(['call.recording_stored']);
-    expect(await eventKinds(callId)).toEqual([]);
+    expect(await eventKinds(callId)).toEqual(['call.received']); // the call's own capture event, and no mono flag
     expect(await suppressionsFor(row?.id ?? '')).toEqual([]);
     expect(await awaiting(row?.id ?? '')).toBe(1);
   });
@@ -202,7 +202,7 @@ describe('recording-status: dual-channel, verified from the bytes', () => {
       sha256: sha256(wavFixture('mono-2s.wav')),
     });
     // The callback said RecordingChannels=2. The bytes said 1. The bytes win, and the call is marked.
-    expect(await eventKinds(callId)).toEqual(['call.recording_mono']);
+    expect(await eventKinds(callId)).toEqual(['call.received', 'call.recording_mono']);
     const mono = await run<{ summary: string }>(
       owner,
       `select summary from events where subject_id = $1 and kind = 'call.recording_mono'`,
@@ -529,7 +529,7 @@ describe('recordings bucket', () => {
     expect((await fetch(publicUrl)).status).not.toBe(200);
   });
 
-  it("is readable by the firm's own fee earner and by no other firm", async () => {
+  it('cannot be read directly by anyone: the audio is reached only through the audited route', async () => {
     const matterId = await freshMatter();
     const { callSid } = await freshCall(matterId);
     const { recordingSid } = await deliver(callSid);
@@ -537,9 +537,9 @@ describe('recordings bucket', () => {
     const path = row?.storage_path ?? '';
 
     const own = await signedInClient(env, seed.feeEarner.email, seed.feeEarner.password);
-    const ok = await own.storage.from('recordings').download(path);
-    expect(ok.error).toBeNull();
-    expect(ok.data?.size).toBe(wavFixture('stereo-2s.wav').byteLength);
+    // Not even the owning firm's fee earner: a direct download is an access nobody writes down.
+    // (recording-access is the route that audits; see access.test.ts.)
+    expect((await own.storage.from('recordings').download(path)).error).not.toBeNull();
 
     const otherFirm = await createFirm(admin, {
       name: `Other ${Date.now()}`,

@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   EMAIL_NOT_CAPTURED_EVENT,
+  timelineRow,
   createMatterInput,
   createParticipantInput,
   err,
@@ -16,6 +17,7 @@ import {
   participantRow,
 } from '@meetlou/domain';
 import type {
+  Audience,
   CreateMatterInput,
   EmailNotCapturedReason,
   CreateParticipantInput,
@@ -24,6 +26,7 @@ import type {
   MatterRow,
   ParticipantRow,
   Result,
+  TimelineRow,
 } from '@meetlou/domain';
 import { z } from 'zod';
 import { fromPostgrest, invalidInput } from './errors';
@@ -298,4 +301,162 @@ export async function getClientVisibleSummaries(
         content: r.content,
       })),
   );
+}
+
+// --- the shared timeline -----------------------------------------------------------------------
+
+const TIMELINE_COLUMNS =
+  'event_id, matter_id, kind, visibility, subject_kind, subject_id, occurred_at, recorded_at, actor_kind, actor_id, summary, read_at';
+
+/**
+ * A matter's timeline AS THE CALLER. There is no role argument and no filtering here: the view is
+ * read under the caller's own session, and row-level security on events decides what comes back.
+ * The same call by a fee earner, a client participant and a chain participant returns three sets.
+ */
+export async function getMatterTimeline(
+  db: SupabaseClient,
+  matterId: string,
+  options: { limit?: number } = {},
+): Promise<Result<TimelineRow[], RecordError>> {
+  const rows = await db
+    .from('matter_timeline')
+    .select(TIMELINE_COLUMNS)
+    .eq('matter_id', matterId)
+    .order('occurred_at', { ascending: true })
+    .order('recorded_at', { ascending: true })
+    .limit(options.limit ?? 500);
+  if (rows.error !== null) return fromPostgrest(rows.error);
+  return ok(z.array(timelineRow).parse(rows.data));
+}
+
+/**
+ * For a fee earner checking what another audience would see: the same rule the policy applies,
+ * over what the caller can already see. It is a check on the rule, not how participants are served.
+ */
+export async function getTimelinePreview(
+  db: SupabaseClient,
+  matterId: string,
+  forAudience: Audience,
+): Promise<Result<TimelineRow[], RecordError>> {
+  const rows = await db.rpc('matter_timeline_as', {
+    p_matter_id: matterId,
+    p_audience: forAudience,
+  });
+  if (rows.error !== null) return fromPostgrest(rows.error);
+  const mapped = z
+    .array(z.object({ ...timelineRow.shape, event_id: z.uuid() }))
+    .parse(rows.data)
+    .sort(
+      (a, b) =>
+        a.occurred_at.localeCompare(b.occurred_at) || a.recorded_at.localeCompare(b.recorded_at),
+    );
+  return ok(mapped);
+}
+
+/**
+ * Record that the caller opened an event. The first opening stands: the database keeps one
+ * receipt per (event, reader), stamped with the server's clock and the reader's capacity at the
+ * time. Opening it again changes nothing. Only an event the caller may see can be opened.
+ */
+export async function markEventRead(
+  db: SupabaseClient,
+  eventId: string,
+): Promise<Result<{ opened: boolean }, RecordError>> {
+  const userId = await currentUserId(db);
+  if (userId === null) return err({ code: 'not_permitted', message: 'not signed in' });
+  const event = await db
+    .from('matter_timeline')
+    .select('event_id, matter_id')
+    .eq('event_id', eventId)
+    .maybeSingle();
+  if (event.error !== null) return fromPostgrest(event.error);
+  if (event.data === null) {
+    return err({ code: 'not_permitted', message: 'event not found or not visible to this user' });
+  }
+  const ref = z.object({ event_id: z.uuid(), matter_id: z.uuid() }).parse(event.data);
+  // A participant cannot read the matter row; the receipt carries the firm id of the event.
+  const eventRow = await db.from('events').select('firm_id').eq('id', eventId).single();
+  if (eventRow.error !== null) return fromPostgrest(eventRow.error);
+  const firmId = z.object({ firm_id: z.uuid() }).parse(eventRow.data).firm_id;
+
+  const inserted = await db
+    .from('receipts')
+    .upsert(
+      { firm_id: firmId, matter_id: ref.matter_id, event_id: eventId, user_id: userId },
+      { onConflict: 'event_id,user_id', ignoreDuplicates: true },
+    )
+    .select('id');
+  if (inserted.error !== null) return fromPostgrest(inserted.error);
+  return ok({ opened: inserted.data.length > 0 });
+}
+
+export interface EventRead {
+  eventId: string;
+  readerRole: string;
+  readAt: string;
+  displayName: string | null;
+}
+
+/** For the firm: who has opened what on a matter, when, and in what capacity. */
+export async function getMatterEventReads(
+  db: SupabaseClient,
+  matterId: string,
+): Promise<Result<EventRead[], RecordError>> {
+  const rows = await db
+    .from('matter_event_reads')
+    .select('event_id, reader_role, read_at, display_name')
+    .eq('matter_id', matterId)
+    .order('read_at', { ascending: true });
+  if (rows.error !== null) return fromPostgrest(rows.error);
+  return ok(
+    z
+      .array(
+        z.object({
+          event_id: z.uuid(),
+          reader_role: z.string(),
+          read_at: z.string(),
+          display_name: z.string().nullable(),
+        }),
+      )
+      .parse(rows.data)
+      .map((r) => ({
+        eventId: r.event_id,
+        readerRole: r.reader_role,
+        readAt: r.read_at,
+        displayName: r.display_name,
+      })),
+  );
+}
+
+export interface MatterEventInput {
+  firmId: string;
+  matterId: string;
+  kind: string;
+  visibility: Audience;
+  summary: string;
+  occurredAt: Date;
+}
+
+/** A fee earner adds a fact to the timeline (an agreed exchange date, a note for the client). */
+export async function addMatterEvent(
+  db: SupabaseClient,
+  input: MatterEventInput,
+  actorUserId: string,
+): Promise<Result<{ eventId: string }, RecordError>> {
+  const inserted = await db
+    .from('events')
+    .insert({
+      firm_id: input.firmId,
+      matter_id: input.matterId,
+      kind: input.kind,
+      visibility: input.visibility,
+      occurred_at: input.occurredAt.toISOString(),
+      actor_kind: 'fee_earner',
+      actor_id: actorUserId,
+      summary: input.summary,
+    })
+    .select('id')
+    .single();
+  if (inserted.error !== null) return fromPostgrest(inserted.error);
+  return ok({ eventId: z.object({ id: z.uuid() }).parse(inserted.data).id });
 }

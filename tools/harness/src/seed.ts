@@ -44,6 +44,7 @@ export const ARMSTRONG = {
       access: 'client',
       role: 'client',
       phoneE164: '+447700900301',
+      email: 'sarah.whitfield@example.org',
     },
     // Chain only: sees chain events, never documents.
     {
@@ -51,6 +52,7 @@ export const ARMSTRONG = {
       access: 'chain',
       role: 'estate_agent',
       phoneE164: '+447700900302',
+      email: 'priya.nandra@example.org',
     },
   ],
 } as const;

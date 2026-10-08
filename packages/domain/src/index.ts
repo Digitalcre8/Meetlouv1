@@ -5,3 +5,4 @@ export * from './logger.ts';
 export * from './recordings.ts';
 export * from './result.ts';
 export * from './schemas.ts';
+export * from './timeline.ts';

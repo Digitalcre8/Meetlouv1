@@ -158,8 +158,12 @@ export async function seedFirm(label: string): Promise<FirmSeed> {
     emailId,
     attachmentId,
     eventIds: {
-      firm: await event('call.received', 'firm', { kind: 'call', id: callId }),
-      client: await event('email.received', 'client', { kind: 'email', id: emailId }),
+      // Written by the trigger on calls, not by hand: every capture writes its own event.
+      firm: await insertOne(
+        `select id from events where subject_kind = 'call' and subject_id = $1 and kind = 'call.received'`,
+        [callId],
+      ),
+      client: await event('email.noted', 'client', { kind: 'email', id: emailId }),
       chain: await event('matter.exchanged', 'chain'),
       // The fee earner has shared the TA6 with the client; the chain is told only that
       // a document exists, which must not unlock the document itself.

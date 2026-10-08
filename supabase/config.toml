@@ -427,3 +427,7 @@ verify_jwt = false
 # The job runner is called with the service role key, so the platform's own JWT check stays on.
 [functions.process-recordings]
 verify_jwt = true
+
+# Called with a signed-in user's own token; the platform's JWT check stays on.
+[functions.recording-access]
+verify_jwt = true

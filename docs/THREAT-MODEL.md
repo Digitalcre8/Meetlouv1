@@ -75,3 +75,12 @@ What an attacker who finds the URL reaches is as described above, with these spe
 - **A leaked service role key** can still insert forged transcripts and outputs (they would sit unapproved, firm-visible only) and read everything; it cannot make any of it reach a client.
 - **Cost.** Each processed call is a paid model call. The job runner works in small bounded batches, parks permanent failures instead of retrying them, and is callable only with the service role key.
 - **Third-party processing.** Audio and transcripts leave our infrastructure for the transcription vendor and the model provider. Both must be on terms that keep data in the UK/EEA, forbid training on it, and appear in the firm's data-processing records. This has not been decided (see open questions).
+
+## The shared timeline and recording access (built in M8)
+
+- **Visibility is a database rule.** What a participant sees is decided by RLS on `events` through `app.can_see_event`, not by the application, so a bug in `apps/web` cannot widen it. The three audiences are tested to return nested, different sets.
+- **Spoofed client email.** A forged From address cannot make a message client-visible: client visibility needs SPF or DKIM to pass. A failed or absent check leaves it firm-only.
+- **Recordings.** The raw bucket is not readable by any user. Access is by the `recording-access` function: authenticate, check the recording is visible to the caller under RLS, audit, then sign a 60 second URL. Not-found and not-yours give the same answer and write nothing. A leaked service role key can still read the bucket directly; that is the existing residual risk.
+- **Read receipts** prove what the platform showed, not what a person read. They are first-read-wins and cannot be written for an event the reader cannot see.
+- **Preview columns** on the verification page use `matter_timeline_as`. If that function drifted from RLS the page would mislead; `timeline.test.ts` compares it with real participant logins.
+- **Residual:** emails, attachments and transcripts can still be read directly from storage by the firm without an audit row.

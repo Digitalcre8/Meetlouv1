@@ -72,6 +72,7 @@ packages/capture/    Webhook handlers as (Request, Deps) => Response; consent, s
 packages/records/    Server-side helpers: createMatter, createParticipant, getSessionFirm (any client, RLS-bound).
                      `@meetlou/records/admin` (createFirm, createFeeEarner, createInboundEmailKey) needs the service role: never import it from apps/web.
 packages/providers/  Transcriber and Summariser interfaces, the summary zod schema, the prompt, deterministic fakes, the rule-based baseline and the Claude adapter. Vendor adapters live here.
+packages/access/     Recording access handler: authenticate, check visibility under RLS, audit, then sign. No recording is served any other way.
 packages/pipeline/   Transcribe -> store -> summarise -> store, as versions; the job runner. Knows nothing about which model is behind the interfaces.
 evals/               Golden transcripts with expected summaries, the committed score baseline, recorded model runs.
 packages/retention/  Retention calculation, legal hold checks, erasure runner.
@@ -101,6 +102,7 @@ pnpm harness make-audio    # regenerate the deterministic WAV fixtures
 pnpm harness list     # fixtures and scenarios;  pnpm harness replay <fixture|scenario> [--tamper|--unsigned]
 pnpm eval [rule-based|oracle|anthropic]   # score a summariser on the golden set (evals/golden); `anthropic --record` spends money
 pnpm deno:check       # type-check the Deno edge functions
+pnpm timeline:demo   # fill MTR-1001 with a realistic timeline through the real capture paths (local only)
 pnpm seed        # Armstrong & Co / MTR-1001 on the local stack; idempotent; refuses non-local URLs
 ```
 
