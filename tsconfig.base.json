@@ -12,6 +12,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "noEmit": true

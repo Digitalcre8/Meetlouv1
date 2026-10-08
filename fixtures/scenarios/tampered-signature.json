@@ -1,0 +1,15 @@
+{
+  "description": "A request whose body was changed after signing is refused and writes nothing.",
+  "steps": [
+    {
+      "fixture": "voice-incoming.armstrong",
+      "tamper": true,
+      "expect": { "status": 403, "bodyExcludes": ["<Say", "record"] }
+    },
+    {
+      "fixture": "voice-announced.armstrong",
+      "tamper": true,
+      "expect": { "status": 403, "bodyExcludes": ["<Dial", "record"] }
+    }
+  ]
+}

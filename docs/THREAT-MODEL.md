@@ -36,3 +36,11 @@ The token is both the API credential and the webhook-signing key.
 - **Worse than the service role key:** the database password or direct DB owner access (can drop triggers) and the project JWT secret (can forge any user). These are separate credentials with separate handling; treat any of the three as a full-incident.
 - **Mitigations:** the key exists only in the Edge Function secret store and tooling, never in `apps/web` (CI guard), never in `NEXT_PUBLIC_*` (CI guard), never logged; rotation is a runbook step; stored hashes make Storage object deletion or substitution detectable (`sha256` in every owning row); inserted rows carry `recorded_at` from the database clock, so a forger cannot backdate them.
 - **Residual:** confidentiality is lost for the window of exposure; deleted Storage objects are not recoverable by us (Supabase backups aside). A nightly re-hash job would detect it (open question 5).
+
+## The voice webhook (built in M3)
+
+- **Forged request:** every request, on both routes, must carry a valid `X-Twilio-Signature`, checked in constant time against a URL built from configuration (`TWILIO_VOICE_BASE_URL`), never from the request host. A failure returns 403 and writes nothing. If configuration is missing the function refuses to serve (500) rather than skip the check.
+- **What the dialled number is:** the number rung comes from our database (`firm_users.phone_e164`), never from the request, so a forged or replayed request cannot make us dial or record an attacker-chosen number.
+- **Replay:** a captured, genuine `announced` request can be replayed; it is idempotent on `call_sid` and writes nothing new. The `started` value is part of the signed URL and is range-checked (not in the future, not older than 15 minutes).
+- **Unrouted numbers** are never silent: a polite answer and a `call.unrouted` audit row (SID and line only, no caller number).
+- **Residual:** with `verify_jwt = false` the function is reachable by anyone on the internet; the signature is the whole defence, so a leaked Twilio token (see above) defeats it.

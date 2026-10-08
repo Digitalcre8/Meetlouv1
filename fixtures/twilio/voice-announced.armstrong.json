@@ -1,0 +1,22 @@
+{
+  "description": "Twilio's callback after the consent announcement finished playing (the <Redirect> target). The caller is still on the line, so this is when the call is recorded as consented and the dial instruction is returned.",
+  "request": {
+    "method": "POST",
+    "path": "/announced?started={{startedSeconds}}",
+    "params": {
+      "AccountSid": "AC00000000000000000000000000000000",
+      "ApiVersion": "2010-04-01",
+      "CallSid": "{{callSid}}",
+      "CallStatus": "in-progress",
+      "Called": "+442079460958",
+      "CalledCountry": "GB",
+      "Caller": "+447700900301",
+      "CallerCountry": "GB",
+      "Direction": "inbound",
+      "From": "+447700900301",
+      "FromCountry": "GB",
+      "To": "+442079460958",
+      "ToCountry": "GB"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "description": "A routed call: announce, then (after the announcement) record and dial the fee earner.",
+  "steps": [
+    {
+      "fixture": "voice-incoming.armstrong",
+      "expect": {
+        "status": 200,
+        "bodyIncludes": ["14 Meadow Road", "recorded", "<Redirect"],
+        "bodyExcludes": ["record-from-answer", "<Dial"]
+      }
+    },
+    {
+      "fixture": "voice-announced.armstrong",
+      "expect": {
+        "status": 200,
+        "bodyIncludes": ["record=\"record-from-answer-dual\"", "recordingStatusCallback", "+447700900123"]
+      }
+    }
+  ]
+}

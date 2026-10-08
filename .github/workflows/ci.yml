@@ -54,7 +54,13 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check the edge functions
+        run: pnpm deno:check
       - run: pnpm db:up
       - name: Seed runs cleanly on a fresh database
         run: pnpm seed
+      # Also serves the edge functions under Deno (docker) and replays the fixtures at them.
       - run: pnpm db:test

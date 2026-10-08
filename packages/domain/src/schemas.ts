@@ -48,6 +48,7 @@ export const createFeeEarnerInput = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   password: z.string().min(12),
   role: firmRole.default('fee_earner'),
+  phoneE164: e164.optional(),
 });
 export type CreateFeeEarnerInput = z.input<typeof createFeeEarnerInput>;
 
@@ -57,6 +58,7 @@ export const createMatterInput = z.object({
   kind: matterKind,
   propertyAddress: nonEmpty,
   lineE164: e164.optional(),
+  responsibleFeeEarnerId: uuid.optional(),
 });
 export type CreateMatterInput = z.infer<typeof createMatterInput>;
 
@@ -86,6 +88,7 @@ export const matterRow = z.object({
   property_address: z.string(),
   inbound_slug: z.string(),
   line_e164: z.string().nullable(),
+  responsible_fee_earner_id: uuid.nullable(),
 });
 export type MatterRow = z.infer<typeof matterRow>;
 

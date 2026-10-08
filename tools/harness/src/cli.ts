@@ -1,0 +1,56 @@
+import { listFixtures, loadFixture, newVars } from './fixtures';
+import { localEnv } from './local-env';
+import { replayFixture, runScenario } from './replay';
+import { serveFunctions, stopFunctions } from './serve';
+
+const [command, name, ...flags] = process.argv.slice(2);
+const env = localEnv();
+
+async function main(): Promise<number> {
+  switch (command) {
+    case 'serve':
+      await serveFunctions(env);
+      console.log(`functions serving at ${env.functionsUrl}`);
+      return 0;
+    case 'stop':
+      stopFunctions();
+      return 0;
+    case 'list': {
+      const { fixtures, scenarios } = listFixtures();
+      console.log(`fixtures:\n  ${fixtures.join('\n  ')}\nscenarios:\n  ${scenarios.join('\n  ')}`);
+      return 0;
+    }
+    case 'replay': {
+      if (name === undefined)
+        throw new Error('usage: harness replay <fixture|scenario> [--tamper]');
+      const { fixtures, scenarios } = listFixtures();
+      if (scenarios.includes(name)) {
+        const run = await runScenario(name, env);
+        for (const step of run.steps) {
+          const verdict = step.failures.length === 0 ? 'ok  ' : 'FAIL';
+          console.log(
+            `${verdict} ${step.fixture}${step.tamper ? ' (tampered)' : ''} -> ${step.result.status}`,
+          );
+          for (const failure of step.failures) console.log(`       ${failure}`);
+        }
+        return run.ok ? 0 : 1;
+      }
+      if (fixtures.includes(name)) {
+        const result = await replayFixture(loadFixture(name), {
+          env,
+          vars: newVars(),
+          tamper: flags.includes('--tamper'),
+          unsigned: flags.includes('--unsigned'),
+        });
+        console.log(`${result.status} ${result.contentType ?? ''}\n${result.body}`);
+        return 0;
+      }
+      throw new Error(`no fixture or scenario named "${name}" (try: harness list)`);
+    }
+    default:
+      console.log('usage: harness <serve|stop|list|replay <name> [--tamper|--unsigned]>');
+      return 2;
+  }
+}
+
+process.exit(await main());

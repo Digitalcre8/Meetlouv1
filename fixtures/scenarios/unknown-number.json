@@ -1,0 +1,13 @@
+{
+  "description": "A call to a number that routes to no matter is answered politely, never recorded.",
+  "steps": [
+    {
+      "fixture": "voice-incoming.unknown-number",
+      "expect": {
+        "status": 200,
+        "bodyIncludes": ["cannot connect this number", "<Hangup"],
+        "bodyExcludes": ["record", "<Dial", "<Redirect"]
+      }
+    }
+  ]
+}

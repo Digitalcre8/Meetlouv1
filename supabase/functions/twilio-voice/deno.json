@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@meetlou/capture": "../../../packages/capture/src/index.ts",
+    "@meetlou/domain": "../../../packages/domain/src/index.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.3",
+    "zod": "npm:zod@4.6.5"
+  }
+}

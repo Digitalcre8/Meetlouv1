@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { inboundAddress, parseInboundSlug } from './inbound-address';
-import { createMatterInput, createParticipantInput, mailDomain } from './schemas';
+import { inboundAddress, parseInboundSlug } from './inbound-address.ts';
+import { createMatterInput, createParticipantInput, mailDomain } from './schemas.ts';
 
 describe('inbound address', () => {
   it('is the matter slug at the firm mail domain', () => {

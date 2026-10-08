@@ -1,0 +1,22 @@
+{
+  "description": "A call to a number that is the line of no matter.",
+  "request": {
+    "method": "POST",
+    "path": "",
+    "params": {
+      "AccountSid": "AC00000000000000000000000000000000",
+      "ApiVersion": "2010-04-01",
+      "CallSid": "{{callSid}}",
+      "CallStatus": "ringing",
+      "Called": "+442079460999",
+      "CalledCountry": "GB",
+      "Caller": "+447700900399",
+      "CallerCountry": "GB",
+      "Direction": "inbound",
+      "From": "+447700900399",
+      "FromCountry": "GB",
+      "To": "+442079460999",
+      "ToCountry": "GB"
+    }
+  }
+}

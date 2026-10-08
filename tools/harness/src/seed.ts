@@ -20,22 +20,42 @@ export const ARMSTRONG = {
   feeEarner: {
     email: 'fee.earner@example.org',
     password: process.env['SEED_FEE_EARNER_PASSWORD'] ?? 'local-dev-only-fee-earner',
+    // Ofcom drama-range mobile. This is the number the voice webhook dials.
+    phoneE164: '+447700900123',
   },
   matter: {
     reference: 'MTR-1001',
     propertyAddress: '14 Meadow Road, Sale M33 2QX',
     kind: 'purchase',
+    // Ofcom drama-range Manchester number. Calls to it route to this matter.
+    lineE164: '+442079460958',
   },
   participants: [
-    { displayName: 'Sarah Whitfield', access: 'client', role: 'client' },
+    {
+      displayName: 'Sarah Whitfield',
+      access: 'client',
+      role: 'client',
+      phoneE164: '+447700900301',
+    },
     // Chain only: sees chain events, never documents.
-    { displayName: 'Priya Nandra', access: 'chain', role: 'estate_agent' },
+    {
+      displayName: 'Priya Nandra',
+      access: 'chain',
+      role: 'estate_agent',
+      phoneE164: '+447700900302',
+    },
   ],
 } as const;
 
 export interface SeedResult {
   firm: FirmRow;
-  feeEarner: { userId: string; email: string; password: string };
+  feeEarner: {
+    memberId: string;
+    userId: string;
+    email: string;
+    password: string;
+    phoneE164: string;
+  };
   matter: MatterRow;
   inboundAddress: string;
   sarahWhitfield: ParticipantRow;
@@ -64,16 +84,24 @@ export async function seedArmstrong(env: LocalEnv = localEnv()): Promise<SeedRes
       : firmRow.parse(existingFirm.data);
 
   // Fee earner (a login attached to the firm)
-  const members = await admin.from('firm_users').select('user_id').eq('firm_id', firm.id).limit(1);
+  const members = await admin
+    .from('firm_users')
+    .select('id, user_id')
+    .eq('firm_id', firm.id)
+    .limit(1);
   if (members.error !== null) throw new Error(members.error.message);
   const member = members.data[0];
-  const userId =
+  const feeEarner =
     member === undefined
       ? unwrap(
           'createFeeEarner',
           await createFeeEarner(admin, { firmId: firm.id, ...ARMSTRONG.feeEarner }),
-        ).userId
-      : z.object({ user_id: z.uuid() }).parse(member).user_id;
+        )
+      : z
+          .object({ id: z.uuid(), user_id: z.uuid() })
+          .transform((row) => ({ memberId: row.id, userId: row.user_id }))
+          .parse(member);
+  const { memberId, userId } = feeEarner;
 
   // From here on, act as the fee earner: matter and participants are created through RLS.
   const asFeeEarner = await signedInClient(
@@ -84,7 +112,9 @@ export async function seedArmstrong(env: LocalEnv = localEnv()): Promise<SeedRes
 
   const found = await asFeeEarner
     .from('matters')
-    .select('id, firm_id, reference, kind, property_address, inbound_slug, line_e164')
+    .select(
+      'id, firm_id, reference, kind, property_address, inbound_slug, line_e164, responsible_fee_earner_id',
+    )
     .eq('firm_id', firm.id)
     .eq('reference', ARMSTRONG.matter.reference)
     .maybeSingle();
@@ -93,7 +123,11 @@ export async function seedArmstrong(env: LocalEnv = localEnv()): Promise<SeedRes
     found.data === null
       ? unwrap(
           'createMatter',
-          await createMatter(asFeeEarner, { firmId: firm.id, ...ARMSTRONG.matter }),
+          await createMatter(asFeeEarner, {
+            firmId: firm.id,
+            ...ARMSTRONG.matter,
+            responsibleFeeEarnerId: memberId,
+          }),
         ).matter
       : matterRow.parse(found.data);
 
@@ -121,7 +155,7 @@ export async function seedArmstrong(env: LocalEnv = localEnv()): Promise<SeedRes
 
   return {
     firm,
-    feeEarner: { userId, ...ARMSTRONG.feeEarner },
+    feeEarner: { memberId, userId, ...ARMSTRONG.feeEarner },
     matter,
     inboundAddress: `${matter.inbound_slug}@${ARMSTRONG.firm.mailDomain}`,
     sarahWhitfield,

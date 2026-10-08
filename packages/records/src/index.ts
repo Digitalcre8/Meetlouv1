@@ -29,7 +29,8 @@ import type { RecordError } from './errors';
 
 export type { RecordError, RecordErrorCode } from './errors';
 
-const MATTER_COLUMNS = 'id, firm_id, reference, kind, property_address, inbound_slug, line_e164';
+const MATTER_COLUMNS =
+  'id, firm_id, reference, kind, property_address, inbound_slug, line_e164, responsible_fee_earner_id';
 const PARTICIPANT_COLUMNS = 'id, firm_id, matter_id, user_id, access, role, display_name';
 
 export interface SessionFirm {
@@ -89,6 +90,9 @@ export async function createMatter(
       kind: i.kind,
       property_address: i.propertyAddress,
       ...(i.lineE164 === undefined ? {} : { line_e164: i.lineE164 }),
+      ...(i.responsibleFeeEarnerId === undefined
+        ? {}
+        : { responsible_fee_earner_id: i.responsibleFeeEarnerId }),
     })
     .select(MATTER_COLUMNS)
     .single();

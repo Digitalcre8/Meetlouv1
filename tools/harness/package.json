@@ -6,7 +6,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "seed": "tsx src/seed-cli.ts"
+    "seed": "tsx src/seed-cli.ts",
+    "harness": "tsx src/cli.ts"
   },
   "dependencies": {
     "@meetlou/domain": "workspace:*",

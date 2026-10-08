@@ -413,3 +413,8 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Twilio calls this directly and cannot present a Supabase JWT. The handler authenticates
+# every request with X-Twilio-Signature instead.
+[functions.twilio-voice]
+verify_jwt = false

@@ -1,0 +1,9 @@
+{
+  "description": "Twilio delivers the same callback more than once. One call row; identical answers.",
+  "steps": [
+    { "fixture": "voice-incoming.armstrong", "expect": { "status": 200, "bodyIncludes": ["<Redirect"] } },
+    { "fixture": "voice-announced.armstrong", "expect": { "status": 200, "bodyIncludes": ["record-from-answer-dual"] } },
+    { "fixture": "voice-announced.armstrong", "expect": { "status": 200, "bodyIncludes": ["record-from-answer-dual"] } },
+    { "fixture": "voice-announced.armstrong", "expect": { "status": 200, "bodyIncludes": ["record-from-answer-dual"] } }
+  ]
+}

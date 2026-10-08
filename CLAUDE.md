@@ -93,6 +93,9 @@ pnpm test        # vitest, all workspaces
 pnpm guards      # scripts/check-guards.sh: service-role-in-browser, migration numbering/immutability
 pnpm db:up       # throwaway local Supabase (Postgres :54322, GoTrue + PostgREST behind http://127.0.0.1:54321), migrations applied (needs Docker)
 pnpm db:test     # auth, RLS, append-only, seed and slug tests against that stack
+pnpm functions:serve  # serve supabase/functions/twilio-voice under Deno (Docker), same entrypoint and env names as hosted
+pnpm harness list     # fixtures and scenarios;  pnpm harness replay <fixture|scenario> [--tamper|--unsigned]
+pnpm deno:check       # type-check the Deno edge functions
 pnpm seed        # Armstrong & Co / MTR-1001 on the local stack; idempotent; refuses non-local URLs
 ```
 
@@ -108,6 +111,10 @@ CI (`.github/workflows/ci.yml`) runs exactly `pnpm verify`'s steps. If it passes
 - Handlers take their dependencies (`db`, `storage`, `clock`, `ids`, `providers`) as an argument. No module-level singletons, no `Date.now()` or `crypto.randomUUID()` called directly in domain logic: inject `Clock` and `IdGenerator`. This is what makes the harness and the time-travel retention tests possible.
 - No `console`. Use the logger from `@meetlou/domain`, which accepts only an event name plus a typed field set of identifiers and outcomes. It has no way to pass free text bodies.
 - Constant-time comparison for every secret (`crypto.subtle` digest then equality over fixed-length bytes, or `timingSafeEqual`). Never `===` on a secret.
+
+- Code that runs under Deno (everything `supabase/functions/*` imports: `packages/capture`, `packages/domain`) uses **explicit `.ts` extensions on relative imports** and only the dependencies mapped in the function's `deno.json` (`zod`, `@supabase/supabase-js`). Node-only APIs (`node:*`, `process`, `Buffer`) are banned there. `supabase/functions/**` is excluded from the Node tsconfig and ESLint and checked by `pnpm deno:check`.
+- Edge functions are **thin**: read configuration, build the service-role client, call a handler from `packages/capture`. They are deployed with `verify_jwt = false` only when the provider cannot send a JWT, and then the handler's own authentication is mandatory.
+- Webhook handlers build the URL they verify from configuration, never from the request.
 
 ### SQL and Supabase
 
@@ -155,3 +162,13 @@ Open questions are listed at the end of `docs/BUILD-ORDER.md`. Do not resolve th
 Every later test builds on `seedArmstrong()` (`@meetlou/harness`, or `pnpm seed`): firm **Armstrong & Co** (mail domain `matters.armstrongco.co.uk`), fee earner `fee.earner@example.org`, matter **MTR-1001**, 14 Meadow Road, Sale M33 2QX (purchase), participants Sarah Whitfield (client) and Priya Nandra (estate agent, `chain` access, no documents). Its `inbound_slug` is generated per database (`14meadowroad-<24 hex>`), so tests read it from the seed result and never hard-code it.
 
 Auth: sign-in is email and password through Supabase Auth. **Public sign-up is disabled**; logins are created by the operator (`createFeeEarner`). The web app only ever holds the anon key and the user's session cookie.
+
+## The fixture harness
+
+`tools/harness` replays captured provider requests at the locally served function, so every webhook is testable offline.
+
+- `fixtures/twilio/*.json` are captured requests (route + form params, with `{{callSid}}` / `{{startedSeconds}}` variables). **Signatures are never stored**: they are bound to the real secret and URL, so replay computes a fresh one with a made-up local token, using its own HMAC code (not the code under test).
+- `fixtures/scenarios/*.json` chain fixtures with expectations (`happy-call`, `duplicate-delivery`, `unknown-number`, `tampered-signature`). A scenario shares one CallSid across its steps.
+- The harness signs for the _configured public URL_ but sends to localhost, which is how it proves the function ignores its Host.
+- It refuses to talk to anything but localhost. Add a fixture per provider request shape you handle; add a scenario per behaviour you promise.
+- SendGrid fixtures will live in `fixtures/sendgrid/` in the same shape when M5 lands.

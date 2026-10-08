@@ -15,6 +15,14 @@ function signJwt(secret: string, claims: Record<string, unknown>): string {
 }
 
 export interface LocalEnv {
+  twilio: {
+    /** A made-up token. The real one never touches this repo. */
+    authToken: string;
+    /** The URL Twilio would be configured with. The function signs against THIS, not its Host. */
+    voiceBaseUrl: string;
+  };
+  /** Where `harness serve` listens, and where replay sends requests. */
+  functionsUrl: string;
   apiUrl: string;
   anonKey: string;
   serviceRoleKey: string;
@@ -25,6 +33,13 @@ export function localEnv(): LocalEnv {
   const secret = process.env['LOCAL_JWT_SECRET'] ?? LOCAL_JWT_SECRET;
   const claims = (role: string) => ({ iss: 'supabase-demo', role, exp: 1_983_812_996 });
   return {
+    twilio: {
+      authToken: process.env['TWILIO_AUTH_TOKEN'] ?? 'local-test-twilio-auth-token-0123456789',
+      voiceBaseUrl:
+        process.env['TWILIO_VOICE_BASE_URL'] ??
+        'https://meetlou-local.example.org/functions/v1/twilio-voice',
+    },
+    functionsUrl: process.env['FUNCTIONS_URL'] ?? 'http://127.0.0.1:54326/twilio-voice',
     apiUrl: process.env['SUPABASE_URL'] ?? 'http://127.0.0.1:54321',
     anonKey: process.env['SUPABASE_ANON_KEY'] ?? signJwt(secret, claims('anon')),
     serviceRoleKey:
@@ -40,5 +55,13 @@ export function assertLocal(env: LocalEnv): void {
   const host = new URL(env.apiUrl).hostname;
   if (host !== '127.0.0.1' && host !== 'localhost') {
     throw new Error(`refusing to seed a non-local API (${host})`);
+  }
+}
+
+/** Replay signs requests with a test token, so it only ever talks to localhost. */
+export function assertLocalTarget(env: LocalEnv): void {
+  const host = new URL(env.functionsUrl).hostname;
+  if (host !== '127.0.0.1' && host !== 'localhost') {
+    throw new Error(`refusing to replay at a non-local target (${host})`);
   }
 }

@@ -8,6 +8,8 @@ export default defineConfig(
     '**/dist/**',
     '**/next-env.d.ts',
     'scripts/**',
+    // Deno code: checked with `deno check` (see CI), not by the Node TypeScript project.
+    'supabase/functions/**',
   ]),
   tseslint.configs.strictTypeChecked,
   {

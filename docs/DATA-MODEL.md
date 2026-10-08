@@ -4,15 +4,17 @@
 
 The first draft below was written before the schema. Where it disagrees with this section, **this section is right** (it is what the migrations and tests do). The recording, transcript, generated-output, approval, retention and legal-hold tables below are still the plan and arrive in later migrations.
 
-| Migration                   | Contents                                                                                                                                      |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0001_foundation`           | `app` helper schema (not API-exposed), default privileges revoked from `anon`/`authenticated`/`service_role`, the `raise_append_only()` guard |
-| `0002_firms`                | `firms`, `firm_users` (role: `fee_earner`, `colp`, `admin`), `app.is_firm_user`, `app.has_firm_role`                                          |
-| `0003_matters_participants` | `matters`, `participants`, slug generator, `app.participant_access`                                                                           |
-| `0004_calls_emails`         | `calls`, `emails`                                                                                                                             |
-| `0005_events_receipts`      | `events`, `receipts`, `app.can_see_event`, `app.can_see_event_id`                                                                             |
-| `0006_attachments`          | `attachments`, `app.attachment_shared_with_client`                                                                                            |
-| `0007_audit_log`            | `audit_log`, `app.audit_change()` triggers on the mutable tables                                                                              |
+| Migration                            | Contents                                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0001_foundation`                    | `app` helper schema (not API-exposed), default privileges revoked from `anon`/`authenticated`/`service_role`, the `raise_append_only()` guard           |
+| `0002_firms`                         | `firms`, `firm_users` (role: `fee_earner`, `colp`, `admin`), `app.is_firm_user`, `app.has_firm_role`                                                    |
+| `0003_matters_participants`          | `matters`, `participants`, slug generator, `app.participant_access`                                                                                     |
+| `0004_calls_emails`                  | `calls`, `emails`                                                                                                                                       |
+| `0005_events_receipts`               | `events`, `receipts`, `app.can_see_event`, `app.can_see_event_id`                                                                                       |
+| `0006_attachments`                   | `attachments`, `app.attachment_shared_with_client`                                                                                                      |
+| `0007_audit_log`                     | `audit_log`, `app.audit_change()` triggers on the mutable tables                                                                                        |
+| `0008_mail_domain_and_address_slugs` | `firms.mail_domain`; `inbound_slug` now built from the property address                                                                                 |
+| `0009_voice_routing`                 | `firm_users.phone_e164`, `matters.responsible_fee_earner_id`, `calls.from_e164` nullable, wider `audit_log.detail` allow-list, `record_unrouted_call()` |
 
 Changes from the draft:
 
@@ -25,6 +27,8 @@ Changes from the draft:
 - **Two-layer append-only.** `calls`, `emails`, `attachments`, `events`, `receipts` and `audit_log` have no UPDATE, DELETE or TRUNCATE grant for any API role, and a trigger raises for every role including the table owner. Retention's delete path (milestone M7) will be added by a later migration for evidence tables; **`audit_log` is never deletable**.
 - **Column-level grants** stop `authenticated` writing `inbound_slug`, moving rows between firms, or supplying `recorded_at`/`read_at`.
 - **`audit_log.detail`** accepts only the keys `changed_columns` and `counts` (a check constraint), so values and content cannot be written into it. The hash chain from the draft is not built yet.
+- **Voice routing (0009).** A call to `matters.line_e164` rings the matter's `responsible_fee_earner_id` at that member's `firm_users.phone_e164`. `calls.from_e164` is null when the caller withholds their number (a null is honest; an invented number would not be). `audit_log.detail` may now also carry `call_sid`, `to_e164` and `reason` (still no content, never the caller's number). `public.record_unrouted_call()` (service role only) writes a `call.unrouted` audit row, unique per call SID so redeliveries add none.
+- **The `calls` row is written when the announcement has played**, not at the first webhook (see BUILD-ORDER M3), so `consent_given_at` is the moment Twilio confirmed the caller heard it and stayed.
 - **Not yet built:** recordings, transcripts, generated outputs and approvals, legal holds, erasure schedule, webhook receipts, quarantine. `calls` holds consent facts only until the recordings table exists.
 
 Design principle: **the record is evidence**. Two classes of table.

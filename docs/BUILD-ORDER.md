@@ -25,14 +25,18 @@ Migrations `0001…`: `firms`, `firm_members`, `matters`, `participants`, `firm_
 - **Done when:** UPDATE and DELETE raise for `service_role`, `authenticated` and the table owner's application connections on every evidence table, with one parameterised test that iterates the list of evidence tables (so a new one cannot be forgotten); `calls` rejects `given` without `consent_given_at`; a recording insert is rejected for a non-consented call; `approvals` rejects a non-fee-earner and rejects service-role inserts; `client_visible_outputs` returns nothing for an unapproved output and returns it after approval; duplicate inserts on every idempotency key are no-ops.
 - **Verified by:** local-stack tests, including the failure cases above.
 
-## M3. Twilio inbound voice: consent and call row
+## M3. Twilio inbound voice: consent and call row (built)
 
-Edge Function `twilio-voice` + `packages/capture` handler. Signature verification, number-to-firm resolution, announcement TwiML, consent callback, `calls` row, recording TwiML built only from a persisted consented call. Harness gains `replay twilio-voice`, which signs fixtures with a test auth token.
+`supabase/functions/twilio-voice` (Deno entrypoint) over `packages/capture`. Built as **two steps that Twilio drives**, because the call row is the consent record and must not claim consent before the announcement has played:
 
-First task: a throwaway proof that a Deno entrypoint can import `packages/capture` from the monorepo. If it cannot, fall back to pre-bundling with esbuild into `supabase/functions/_build`. Decide before writing handlers.
+1. `POST <base>`: verify signature, route on `matters.line_e164`, return the announcement (`<Say>` naming the firm and property) then `<Redirect>` to `<base>/announced?started=<epoch>`. **Nothing is written** (an unrouted number writes an audit row and is answered politely).
+2. `POST <base>/announced?started=...`: Twilio only calls this once the announcement has finished and the caller is still on the line. Now the `calls` row is inserted (`ON CONFLICT (call_sid) DO NOTHING`) with `consent_given_at` = this moment, and the TwiML is `<Dial record="record-from-answer-dual" recordingStatusCallback=...>` to the responsible fee earner.
 
-- **Done when:** bad or missing signature returns 403 and writes only a `rejected_auth` receipt (test); the first webhook returns announcement TwiML with no recording instruction and writes no consent claim (test); a replayed callback ×3 yields one `calls` row and identical responses (test); `declined` and `no_response` yield a `calls` row, no recording TwiML, and a `call.consent_recorded` event; the property test enumerates handler outputs and fails if any `record` instruction exists without a persisted `given` row.
-- **Verified by:** Vitest against handler functions with an in-memory or local-stack DB; harness replay end to end against the local stack.
+Consent is the announcement itself (no keypress); the wording is a constant in `consent.ts`, pinned by a test so no change can pass unnoticed. This answers open question 2 as "implied by staying on the line". `/recording-status` answers 501 until M4.
+
+- **Done when (all met):** a valid signature is accepted; a tampered, unsigned, or host-signed request returns 403 and writes nothing; the same CallSid delivered three times gives one row and identical answers; an unknown number is answered politely, writes one audit row (idempotent) and creates no matter or call; no response carries a recording instruction unless a consented call row exists (property test, plus a mutation check that it fails if the row is written early).
+- **Verified by:** unit tests with an in-memory store (`packages/capture`), and `supabase/tests/voice.test.ts`, which serves the real entrypoint under Deno (`pnpm functions:serve`) and replays `fixtures/` at it against the local database.
+- **Not verified here:** the Supabase Edge Runtime itself (the sandbox cannot pull its image). The entrypoint is plain `Deno.serve` with a per-function `deno.json` import map, `verify_jwt = false`, and passes `deno check`; confirm with `supabase functions serve` before first deploy.
 
 ## M4. Recording ingest and the dual-channel check
 

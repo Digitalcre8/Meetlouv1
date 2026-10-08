@@ -1,0 +1,22 @@
+{
+  "description": "A call to Armstrong & Co's line for MTR-1001 (14 Meadow Road), from Sarah Whitfield's mobile. The first webhook: Twilio asks what to do with a new inbound call.",
+  "request": {
+    "method": "POST",
+    "path": "",
+    "params": {
+      "AccountSid": "AC00000000000000000000000000000000",
+      "ApiVersion": "2010-04-01",
+      "CallSid": "{{callSid}}",
+      "CallStatus": "ringing",
+      "Called": "+442079460958",
+      "CalledCountry": "GB",
+      "Caller": "+447700900301",
+      "CallerCountry": "GB",
+      "Direction": "inbound",
+      "From": "+447700900301",
+      "FromCountry": "GB",
+      "To": "+442079460958",
+      "ToCountry": "GB"
+    }
+  }
+}

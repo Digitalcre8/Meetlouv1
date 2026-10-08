@@ -24,6 +24,8 @@ export async function createFirm(
 }
 
 export interface CreatedFeeEarner {
+  /** firm_users.id: what a matter's responsible_fee_earner_id points at. */
+  memberId: string;
   userId: string;
   firmId: string;
   role: FirmRole;
@@ -53,11 +55,23 @@ export async function createFeeEarner(
 
   const member = await admin
     .from('firm_users')
-    .insert({ firm_id: i.firmId, user_id: userId, role: firmRole.parse(i.role) });
+    .insert({
+      firm_id: i.firmId,
+      user_id: userId,
+      role: firmRole.parse(i.role),
+      ...(i.phoneE164 === undefined ? {} : { phone_e164: i.phoneE164 }),
+    })
+    .select('id')
+    .single();
   if (member.error !== null) {
     // Do not leave a login with no firm behind.
     await admin.auth.admin.deleteUser(userId);
     return fromPostgrest(member.error);
   }
-  return ok({ userId, firmId: i.firmId, role: i.role });
+  return ok({
+    memberId: z.uuid().parse(member.data.id),
+    userId,
+    firmId: i.firmId,
+    role: i.role,
+  });
 }

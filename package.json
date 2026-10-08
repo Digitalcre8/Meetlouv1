@@ -16,7 +16,10 @@
     "verify": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm guards",
     "db:up": "bash scripts/db-up.sh",
     "db:test": "pnpm --filter @meetlou/db-tests test:db",
-    "seed": "pnpm --filter @meetlou/harness seed"
+    "seed": "pnpm --filter @meetlou/harness seed",
+    "harness": "pnpm --silent --filter @meetlou/harness harness",
+    "functions:serve": "pnpm --silent --filter @meetlou/harness harness serve",
+    "deno:check": "bash scripts/deno-check.sh"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
