@@ -42,7 +42,7 @@ beforeAll(async () => {
 }, 180_000);
 
 afterAll(async () => {
-  stopFunctions();
+  if (process.env['KEEP_FUNCTIONS'] === undefined) stopFunctions();
   await pool.end();
 });
 

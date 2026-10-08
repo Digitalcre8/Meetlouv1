@@ -38,3 +38,71 @@ export interface VoiceStore {
 }
 
 export type UnroutedReason = 'no_matter_for_line' | 'no_fee_earner_number';
+
+// --- recording status callback ---------------------------------------------------------------
+
+export interface CallForRecording {
+  callId: string;
+  firmId: string;
+  matterId: string;
+  /** True only if the call row says consent was given. A recording is never fetched otherwise. */
+  consentGiven: boolean;
+}
+
+export interface IngestRecordingInput {
+  callId: string;
+  recordingSid: string;
+  storagePath: string;
+  sha256: string;
+  byteLength: number;
+  durationSeconds: number;
+  /** Read from the WAV header of the downloaded bytes. */
+  channels: 1 | 2;
+}
+
+export interface IngestRecordingResult {
+  recordingId: string;
+  /** False for a redelivery: nothing was written. */
+  created: boolean;
+  /** Suppression reasons applied (misdial, near_duplicate). Empty for a normal call. */
+  suppressed: string[];
+}
+
+export type RecordingIssue =
+  | 'recording.quarantined'
+  | 'recording.rejected'
+  | 'recording.not_completed'
+  | 'recording.download_failed';
+
+export interface RecordingStore {
+  findCall(callSid: string): Promise<CallForRecording | null>;
+  findRecording(recordingSid: string): Promise<{ recordingId: string } | null>;
+  /** One transaction: the recording row, its events, and the guards. Idempotent on recordingSid. */
+  ingest(input: IngestRecordingInput): Promise<IngestRecordingResult>;
+  /** An audit row naming a recording that was not stored, so it is never lost silently. */
+  recordIssue(input: {
+    action: RecordingIssue;
+    recordingSid: string;
+    callSid: string;
+    firmId: string | null;
+    reason: string;
+  }): Promise<void>;
+}
+
+export type DownloadResult =
+  | { ok: true; bytes: Uint8Array<ArrayBuffer> }
+  | { ok: false; reason: 'not_found' | 'unauthorised' | 'too_large' | 'unavailable' };
+
+export interface RecordingDownloader {
+  /** Fetch the recording asking for two channels. Where from is the downloader's business. */
+  download(recordingSid: string): Promise<DownloadResult>;
+}
+
+export interface ObjectStorage {
+  /** Store an object at a path in the private recordings bucket. 'exists' if already there. */
+  put(
+    path: string,
+    bytes: Uint8Array<ArrayBuffer>,
+    contentType: string,
+  ): Promise<'created' | 'exists'>;
+}

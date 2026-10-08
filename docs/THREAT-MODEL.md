@@ -44,3 +44,13 @@ The token is both the API credential and the webhook-signing key.
 - **Replay:** a captured, genuine `announced` request can be replayed; it is idempotent on `call_sid` and writes nothing new. The `started` value is part of the signed URL and is range-checked (not in the future, not older than 15 minutes).
 - **Unrouted numbers** are never silent: a polite answer and a `call.unrouted` audit row (SID and line only, no caller number).
 - **Residual:** with `verify_jwt = false` the function is reachable by anyone on the internet; the signature is the whole defence, so a leaked Twilio token (see above) defeats it.
+
+## The recording status callback (built in M4)
+
+- **Same authentication as the voice webhook:** signature over a URL built from configuration; nothing is fetched or written for a failure.
+- **No SSRF through the callback.** The `RecordingUrl` Twilio sends is ignored; the download URL is built from configuration plus a validated `RE...` SID, so a forged or replayed callback cannot point us at an arbitrary host. The account SID in the callback must match ours.
+- **No consent, no audio.** A callback for a call with no consented row is audited (`recording.quarantined`) and the audio is never fetched; it stays at Twilio.
+- **Hostile bytes.** Only a WAV with a valid header and one or two channels is accepted; anything else is audited and not stored. The bucket accepts only audio MIME types and caps size. We never decode or transcode the audio in the webhook.
+- **Resource use.** Downloads over 150 MB are refused and audited; the body of the callback itself is capped at 16 KB.
+- **Leaked service role key (unchanged):** can still delete Storage objects through the Storage API (see open question 5); the SHA-256 in `call_recordings` makes substitution or loss detectable.
+- **Twilio-side copies remain.** We do not delete the recording at Twilio after storing it (that is a retention-job step, open question 4), so a recording that failed to ingest can be recovered from the SID in its audit row.

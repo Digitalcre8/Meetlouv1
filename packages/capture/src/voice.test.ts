@@ -78,7 +78,12 @@ function request(
 
 function setup(store = new MemoryStore()) {
   const handler = createTwilioVoiceHandler({
-    config: { authToken: TOKEN, baseUrl: BASE },
+    config: {
+      authToken: TOKEN,
+      baseUrl: BASE,
+      accountSid: 'AC00000000000000000000000000000000',
+      apiBaseUrl: 'https://api.twilio.com',
+    },
     store,
     clock: { now: () => NOW },
   });

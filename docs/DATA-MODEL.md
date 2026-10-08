@@ -15,6 +15,9 @@ The first draft below was written before the schema. Where it disagrees with thi
 | `0007_audit_log`                     | `audit_log`, `app.audit_change()` triggers on the mutable tables                                                                                        |
 | `0008_mail_domain_and_address_slugs` | `firms.mail_domain`; `inbound_slug` now built from the property address                                                                                 |
 | `0009_voice_routing`                 | `firm_users.phone_e164`, `matters.responsible_fee_earner_id`, `calls.from_e164` nullable, wider `audit_log.detail` allow-list, `record_unrouted_call()` |
+| `0010_call_recordings`               | `call_recordings`, `recording_suppressions`, `ingest_recording()`, `record_recording_issue()`                                                           |
+| `0011_recordings_bucket`             | the private `recordings` Storage bucket and its read policy                                                                                             |
+| `0012_transcripts`                   | `transcripts` (guards only), `recordings_awaiting_transcription`                                                                                        |
 
 Changes from the draft:
 
@@ -29,7 +32,8 @@ Changes from the draft:
 - **`audit_log.detail`** accepts only the keys `changed_columns` and `counts` (a check constraint), so values and content cannot be written into it. The hash chain from the draft is not built yet.
 - **Voice routing (0009).** A call to `matters.line_e164` rings the matter's `responsible_fee_earner_id` at that member's `firm_users.phone_e164`. `calls.from_e164` is null when the caller withholds their number (a null is honest; an invented number would not be). `audit_log.detail` may now also carry `call_sid`, `to_e164` and `reason` (still no content, never the caller's number). `public.record_unrouted_call()` (service role only) writes a `call.unrouted` audit row, unique per call SID so redeliveries add none.
 - **The `calls` row is written when the announcement has played**, not at the first webhook (see BUILD-ORDER M3), so `consent_given_at` is the moment Twilio confirmed the caller heard it and stayed.
-- **Not yet built:** recordings, transcripts, generated outputs and approvals, legal holds, erasure schedule, webhook receipts, quarantine. `calls` holds consent facts only until the recordings table exists.
+- **Recordings (0010-0012).** `call_recordings` (unique `twilio_recording_sid`; `channels` is read from the WAV header, `is_dual_channel` is generated from it; a trigger refuses a recording for a call without consent). `recording_suppressions` holds why a recording is not a real conversation (`misdial`, `near_duplicate` naming the original, `single_speaker`), one row per reason, nothing deleted. `ingest_recording()` does the insert, events and guards in one transaction under a per-matter advisory lock. Audio lives in the private `recordings` bucket at `<firm_id>/<matter_id>/<recording_sid>.wav`; only that firm's members can read it. `transcripts` exists so the database itself refuses `diarised = true` for a mono recording and records a single-speaker transcript as a suppression. `audit_log.detail` may now name a `recording_sid`.
+- **Not yet built:** transcription providers and summaries, generated outputs and approvals, legal holds, erasure schedule, webhook receipts, quarantine. `calls` holds consent facts only until the recordings table exists.
 
 Design principle: **the record is evidence**. Two classes of table.
 

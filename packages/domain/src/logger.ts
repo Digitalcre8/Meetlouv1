@@ -14,6 +14,10 @@ export interface LogFields {
   matterId?: string;
   firmId?: string;
   callId?: string;
+  recordingSid?: string;
+  channels?: number;
+  /** Suppression reasons applied, comma-separated. */
+  suppressed?: string;
   created?: boolean;
   /**
    * The message of an infrastructure failure (database/network), truncated. Stores must keep

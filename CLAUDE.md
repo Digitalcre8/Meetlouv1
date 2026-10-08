@@ -94,6 +94,8 @@ pnpm guards      # scripts/check-guards.sh: service-role-in-browser, migration n
 pnpm db:up       # throwaway local Supabase (Postgres :54322, GoTrue + PostgREST behind http://127.0.0.1:54321), migrations applied (needs Docker)
 pnpm db:test     # auth, RLS, append-only, seed and slug tests against that stack
 pnpm functions:serve  # serve supabase/functions/twilio-voice under Deno (Docker), same entrypoint and env names as hosted
+pnpm harness fake-twilio   # fake Twilio recordings API (serves fixtures/audio/*.wav) for recording downloads
+pnpm harness make-audio    # regenerate the deterministic WAV fixtures
 pnpm harness list     # fixtures and scenarios;  pnpm harness replay <fixture|scenario> [--tamper|--unsigned]
 pnpm deno:check       # type-check the Deno edge functions
 pnpm seed        # Armstrong & Co / MTR-1001 on the local stack; idempotent; refuses non-local URLs
@@ -171,4 +173,5 @@ Auth: sign-in is email and password through Supabase Auth. **Public sign-up is d
 - `fixtures/scenarios/*.json` chain fixtures with expectations (`happy-call`, `duplicate-delivery`, `unknown-number`, `tampered-signature`). A scenario shares one CallSid across its steps.
 - The harness signs for the _configured public URL_ but sends to localhost, which is how it proves the function ignores its Host.
 - It refuses to talk to anything but localhost. Add a fixture per provider request shape you handle; add a scenario per behaviour you promise.
+- `fixtures/audio/*.wav` are tiny deterministic WAVs (2 s, 8 kHz, 16-bit; stereo has a different tone per channel, mono is the mixdown). `FakeTwilio` serves them like Twilio's API does: **stereo only if `RequestedChannels=2` is asked for**, a mono mixdown otherwise; it can also be told to ignore the request, truncate, return HTML, 404, or fail once. Tests that need an unsuppressed recording use a fresh matter, because the near-duplicate guard compares recordings on one matter.
 - SendGrid fixtures will live in `fixtures/sendgrid/` in the same shape when M5 lands.

@@ -1,3 +1,5 @@
+import { FakeTwilio } from './fake-twilio';
+import { writeAudioFixtures } from './make-audio';
 import { listFixtures, loadFixture, newVars } from './fixtures';
 import { localEnv } from './local-env';
 import { replayFixture, runScenario } from './replay';
@@ -11,6 +13,16 @@ async function main(): Promise<number> {
     case 'serve':
       await serveFunctions(env);
       console.log(`functions serving at ${env.functionsUrl}`);
+      return 0;
+    case 'fake-twilio': {
+      const fake = new FakeTwilio(env);
+      await fake.start();
+      console.log(`fake Twilio recordings API at ${env.twilio.apiBaseUrl} (Ctrl-C to stop)`);
+      await new Promise(() => undefined);
+      return 0;
+    }
+    case 'make-audio':
+      console.log(writeAudioFixtures().join('\n'));
       return 0;
     case 'stop':
       stopFunctions();
@@ -48,7 +60,9 @@ async function main(): Promise<number> {
       throw new Error(`no fixture or scenario named "${name}" (try: harness list)`);
     }
     default:
-      console.log('usage: harness <serve|stop|list|replay <name> [--tamper|--unsigned]>');
+      console.log(
+        'usage: harness <serve|stop|fake-twilio|make-audio|list|replay <name> [--tamper|--unsigned]>',
+      );
       return 2;
   }
 }

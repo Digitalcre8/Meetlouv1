@@ -1,6 +1,7 @@
 // Minimal stand-in for the Kong gateway of `supabase start`: one port that maps
 //   /auth/v1/*  -> GoTrue   (prefix stripped)
 //   /rest/v1/*  -> PostgREST (prefix stripped)
+//   /storage/v1/* -> Storage API (prefix stripped)
 // so supabase-js works against the throwaway stack exactly as it does against a real project.
 // Local use only. No dependencies.
 import http from 'node:http';
@@ -9,6 +10,7 @@ const listen = Number(process.env.GATEWAY_PORT ?? 54321);
 const routes = [
   { prefix: '/auth/v1', port: Number(process.env.GOTRUE_PORT ?? 54324) },
   { prefix: '/rest/v1', port: Number(process.env.POSTGREST_PORT ?? 54323) },
+  { prefix: '/storage/v1', port: Number(process.env.STORAGE_PORT ?? 54325) },
 ];
 
 http

@@ -15,6 +15,7 @@ cd "$(dirname "$0")/.."
 PG_IMAGE="${SUPABASE_PG_IMAGE:-supabase/postgres:17.6.1.066}"
 GOTRUE_IMAGE="${SUPABASE_GOTRUE_IMAGE:-supabase/gotrue:v2.188.1}"
 POSTGREST_IMAGE="${POSTGREST_IMAGE:-postgrest/postgrest:v12.2.12}"
+STORAGE_IMAGE="${SUPABASE_STORAGE_IMAGE:-supabase/storage-api:v1.29.1}"
 # The well-known Supabase local-development secret. It protects nothing real.
 JWT_SECRET="${LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}"
 NET="meetlou-net"
@@ -24,7 +25,7 @@ PSQL=(psql -h 127.0.0.1 -p "$PORT" -U postgres -v ON_ERROR_STOP=1 -q)
 
 mkdir -p .local
 if [[ -f .local/gateway.pid ]]; then kill "$(cat .local/gateway.pid)" 2>/dev/null || true; rm -f .local/gateway.pid; fi
-docker rm -f meetlou-db meetlou-gotrue meetlou-postgrest >/dev/null 2>&1 || true
+docker rm -f meetlou-db meetlou-gotrue meetlou-postgrest meetlou-storage >/dev/null 2>&1 || true
 docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET" >/dev/null
 
 docker run -d --name meetlou-db --network "$NET" -e POSTGRES_PASSWORD=postgres \
@@ -35,7 +36,8 @@ for _ in $(seq 1 60); do "${PSQL[@]}" -c 'select 1' >/dev/null 2>&1 && break; sl
 # The image creates these service roles without a usable password; set it for local use.
 psql -h 127.0.0.1 -p "$PORT" -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -q \
   -c "alter role supabase_auth_admin with password 'postgres'" \
-  -c "alter role authenticator with password 'postgres'"
+  -c "alter role authenticator with password 'postgres'" \
+  -c "alter role supabase_storage_admin with password 'postgres'"
 
 # GoTrue first: it owns the auth schema, and our tables reference auth.users.
 docker run -d --name meetlou-gotrue --network "$NET" -p 127.0.0.1:54324:9999 \
@@ -51,6 +53,28 @@ docker run -d --name meetlou-gotrue --network "$NET" -p 127.0.0.1:54324:9999 \
   "$GOTRUE_IMAGE" >/dev/null
 for _ in $(seq 1 60); do curl -fsS http://127.0.0.1:54324/health >/dev/null 2>&1 && break; sleep 2; done
 curl -fsS http://127.0.0.1:54324/health >/dev/null
+
+# Storage next, for the same reason: it creates storage.buckets / storage.objects, which
+# the recordings migration refers to. Files live on the container's own disk (throwaway).
+docker run -d --name meetlou-storage --network "$NET" -p 127.0.0.1:54325:5000 \
+  -e ANON_KEY="$(node scripts/local-keys.mjs anon)" \
+  -e SERVICE_KEY="$(node scripts/local-keys.mjs service)" \
+  -e PGRST_JWT_SECRET="$JWT_SECRET" \
+  -e DATABASE_URL=postgres://supabase_storage_admin:postgres@meetlou-db:5432/postgres \
+  -e POSTGREST_URL=http://meetlou-postgrest:3000 \
+  -e FILE_SIZE_LIMIT=157286400 -e STORAGE_BACKEND=file -e FILE_STORAGE_BACKEND_PATH=/var/lib/storage \
+  -e TENANT_ID=local -e REGION=local -e GLOBAL_S3_BUCKET=local -e ENABLE_IMAGE_TRANSFORMATION=false \
+  -e SERVER_PORT=5000 \
+  "$STORAGE_IMAGE" >/dev/null
+for _ in $(seq 1 60); do curl -fsS http://127.0.0.1:54325/status >/dev/null 2>&1 && break; sleep 2; done
+curl -fsS http://127.0.0.1:54325/status >/dev/null
+# The Supabase platform lets `postgres` manage storage (create buckets and their policies from
+# migrations) and gives the API roles their table privileges (RLS then decides what they see);
+# this image only does so once the storage tables exist, so do the same here.
+psql -h 127.0.0.1 -p "$PORT" -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -q \
+  -c "grant all on all tables in schema storage to postgres, anon, authenticated, service_role" \
+  -c "grant all on all sequences in schema storage to postgres, anon, authenticated, service_role" \
+  -c "grant usage on schema storage to postgres, anon, authenticated, service_role"
 
 for f in supabase/migrations/*.sql; do
   echo "applying $(basename "$f")"

@@ -1,0 +1,9 @@
+{
+  "description": "A whole call: announce, consent and dial, then Twilio reports the finished recording. Needs `pnpm harness fake-twilio` running to serve the audio.",
+  "steps": [
+    { "fixture": "voice-incoming.armstrong", "expect": { "status": 200, "bodyIncludes": ["<Redirect"] } },
+    { "fixture": "voice-announced.armstrong", "expect": { "status": 200, "bodyIncludes": ["record-from-answer-dual"] } },
+    { "fixture": "recording-status.armstrong", "expect": { "status": 200 } },
+    { "fixture": "recording-status.armstrong", "expect": { "status": 200 } }
+  ]
+}

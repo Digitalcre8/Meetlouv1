@@ -47,6 +47,8 @@ export function newVars(overrides: Vars = {}): Vars {
   return {
     callSid: `CA${randomBytes(16).toString('hex')}`,
     startedSeconds: String(Math.floor(Date.now() / 1000)),
+    recordingSid: `RE${randomBytes(16).toString('hex')}`,
+    duration: '125',
     ...overrides,
   };
 }

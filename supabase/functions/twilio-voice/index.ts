@@ -1,11 +1,21 @@
-// Twilio inbound voice webhook. All behaviour lives in packages/capture; this file only
-// wires configuration and the service-role client into it.
+// Twilio voice webhooks: the inbound call (announce, then consent + dial) and the recording
+// status callback. All behaviour lives in packages/capture; this file only wires configuration
+// and the service-role client into it.
 //
 // Twilio does not send a Supabase JWT, so this function is deployed with verify_jwt = false
-// (supabase/config.toml). Its authentication is the X-Twilio-Signature check in the handler.
+// (supabase/config.toml). Its authentication is the X-Twilio-Signature check in the handlers.
 import { createClient } from '@supabase/supabase-js';
 import { createLogger } from '@meetlou/domain';
-import { SupabaseVoiceStore, createTwilioVoiceHandler, readVoiceConfig } from '@meetlou/capture';
+import {
+  SupabaseObjectStorage,
+  SupabaseRecordingStore,
+  SupabaseVoiceStore,
+  TwilioRecordingDownloader,
+  createRecordingStatusHandler,
+  createTwilioRouter,
+  createTwilioVoiceHandler,
+  readVoiceConfig,
+} from '@meetlou/capture';
 
 const logger = createLogger((line) => console.log(line));
 const config = readVoiceConfig((name) => Deno.env.get(name));
@@ -23,11 +33,20 @@ if (!config.ok || supabaseUrl === undefined || serviceRoleKey === undefined) {
   const db = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const handler = createTwilioVoiceHandler({
-    config: config.value,
-    store: new SupabaseVoiceStore(db),
-    clock: { now: () => new Date() },
-    logger,
+  const handler = createTwilioRouter({
+    voice: createTwilioVoiceHandler({
+      config: config.value,
+      store: new SupabaseVoiceStore(db),
+      clock: { now: () => new Date() },
+      logger,
+    }),
+    recordingStatus: createRecordingStatusHandler({
+      config: config.value,
+      store: new SupabaseRecordingStore(db),
+      downloader: new TwilioRecordingDownloader(config.value),
+      storage: new SupabaseObjectStorage(db),
+      logger,
+    }),
   });
   Deno.serve({ port: Number(Deno.env.get('PORT') ?? 8000) }, handler);
 }

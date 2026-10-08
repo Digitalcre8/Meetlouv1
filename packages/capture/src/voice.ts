@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { CONSENT_ANNOUNCEMENT_VERSION, consentAnnouncement } from './consent.ts';
 import type { VoiceConfig } from './config.ts';
 import type { Clock, VoiceStore } from './ports.ts';
-import { parseForm, validateTwilioSignature } from './twilio-signature.ts';
-import type { FormParams } from './twilio-signature.ts';
+import { firstValues, plain, readSignedTwilioRequest } from './twilio-request.ts';
 import { announceTwiml, dialAndRecordTwiml, noOneAvailableTwiml, unroutedTwiml } from './twiml.ts';
 
 export interface VoiceDeps {
@@ -16,7 +15,6 @@ export interface VoiceDeps {
 }
 
 const E164 = /^\+[1-9][0-9]{6,14}$/;
-const MAX_BODY_BYTES = 16 * 1024;
 /** A caller cannot be kept in the announcement for anything like this long. */
 const MAX_ANNOUNCEMENT_SECONDS = 15 * 60;
 
@@ -28,15 +26,11 @@ const callParams = z.object({
 
 const TWIML = { 'content-type': 'text/xml; charset=utf-8' } as const;
 const twiml = (body: string) => new Response(body, { status: 200, headers: TWIML });
-const plain = (status: number, body: string) =>
-  new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
-
-type Route = 'incoming' | 'announced' | 'recording-status';
+type Route = 'incoming' | 'announced';
 
 function routeOf(pathname: string): Route {
   const last = pathname.replace(/\/+$/, '').split('/').pop() ?? '';
   if (last === 'announced') return 'announced';
-  if (last === 'recording-status') return 'recording-status';
   return 'incoming';
 }
 
@@ -59,18 +53,6 @@ export function createTwilioVoiceHandler(deps: VoiceDeps): (request: Request) =>
   return async (request) => {
     const route = routeOf(new URL(request.url).pathname);
     if (request.method !== 'POST') return plain(405, 'Method Not Allowed');
-    if (route === 'recording-status') {
-      // Arrives with the recording milestone. Say so rather than acknowledge and drop it.
-      logger.error('recording_status_not_implemented', { route, status: 501 });
-      return plain(501, 'Not Implemented');
-    }
-
-    const declared = Number(request.headers.get('content-length') ?? '0');
-    if (declared > MAX_BODY_BYTES) return plain(413, 'Payload Too Large');
-    const body = await request.text();
-    if (body.length > MAX_BODY_BYTES) return plain(413, 'Payload Too Large');
-    const params = parseForm(body);
-
     // The query string is part of what Twilio signs. Only our own `started` value is accepted,
     // and it is re-rendered canonically, so the signed URL is built entirely from configuration
     // plus a validated integer.
@@ -79,18 +61,16 @@ export function createTwilioVoiceHandler(deps: VoiceDeps): (request: Request) =>
     if (route === 'announced') {
       const raw = new URL(request.url).searchParams.get('started');
       const parsed = z.coerce.number().int().positive().safeParse(raw);
-      if (!parsed.success) return reject(logger, route, 'rejected_signature');
+      if (!parsed.success) {
+        return reject(logger, route, 'rejected_signature', plain(403, 'Forbidden'));
+      }
       startedSeconds = parsed.data;
       expectedUrl = `${config.baseUrl}/announced?started=${startedSeconds}`;
     }
 
-    const authentic = await validateTwilioSignature(
-      config.authToken,
-      expectedUrl,
-      params,
-      request.headers.get('x-twilio-signature'),
-    );
-    if (!authentic) return reject(logger, route, 'rejected_signature');
+    const read = await readSignedTwilioRequest(request, config.authToken, expectedUrl);
+    if (!read.ok) return reject(logger, route, read.outcome, read.response);
+    const params = read.params;
 
     const call = callParams.safeParse(firstValues(params));
     if (!call.success) {
@@ -178,16 +158,7 @@ export function createTwilioVoiceHandler(deps: VoiceDeps): (request: Request) =>
   };
 }
 
-function reject(logger: Logger, route: string, outcome: string): Response {
-  logger.info('webhook', { route, outcome, status: 403 });
-  return plain(403, 'Forbidden');
-}
-
-function firstValues(params: FormParams): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [name, values] of Object.entries(params)) {
-    const first = values[0];
-    if (first !== undefined) out[name] = first;
-  }
-  return out;
+function reject(logger: Logger, route: string, outcome: string, response: Response): Response {
+  logger.info('webhook', { route, outcome, status: response.status });
+  return response;
 }

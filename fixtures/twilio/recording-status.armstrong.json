@@ -1,0 +1,18 @@
+{
+  "description": "Twilio's recordingStatusCallback for the Dial recording of an Armstrong call: the recording is complete and ready to download. RecordingUrl is what Twilio sends; the function never fetches it (it builds the download URL itself).",
+  "request": {
+    "method": "POST",
+    "path": "/recording-status",
+    "params": {
+      "AccountSid": "AC00000000000000000000000000000000",
+      "CallSid": "{{callSid}}",
+      "RecordingSid": "{{recordingSid}}",
+      "RecordingUrl": "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000000/Recordings/{{recordingSid}}",
+      "RecordingStatus": "completed",
+      "RecordingDuration": "{{duration}}",
+      "RecordingChannels": "2",
+      "RecordingSource": "DialVerb",
+      "RecordingStartTime": "Thu, 08 Oct 2026 10:00:20 +0000"
+    }
+  }
+}

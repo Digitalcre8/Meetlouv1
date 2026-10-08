@@ -18,6 +18,10 @@ export interface LocalEnv {
   twilio: {
     /** A made-up token. The real one never touches this repo. */
     authToken: string;
+    /** A made-up account SID: AC + 32 hex. */
+    accountSid: string;
+    /** Where the function downloads recordings from: the harness's fake Twilio, not api.twilio.com. */
+    apiBaseUrl: string;
     /** The URL Twilio would be configured with. The function signs against THIS, not its Host. */
     voiceBaseUrl: string;
   };
@@ -35,6 +39,8 @@ export function localEnv(): LocalEnv {
   return {
     twilio: {
       authToken: process.env['TWILIO_AUTH_TOKEN'] ?? 'local-test-twilio-auth-token-0123456789',
+      accountSid: process.env['TWILIO_ACCOUNT_SID'] ?? 'AC00000000000000000000000000000000',
+      apiBaseUrl: process.env['TWILIO_API_BASE_URL'] ?? 'http://127.0.0.1:54327',
       voiceBaseUrl:
         process.env['TWILIO_VOICE_BASE_URL'] ??
         'https://meetlou-local.example.org/functions/v1/twilio-voice',
