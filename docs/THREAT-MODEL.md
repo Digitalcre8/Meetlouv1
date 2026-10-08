@@ -54,3 +54,15 @@ The token is both the API credential and the webhook-signing key.
 - **Resource use.** Downloads over 150 MB are refused and audited; the body of the callback itself is capped at 16 KB.
 - **Leaked service role key (unchanged):** can still delete Storage objects through the Storage API (see open question 5); the SHA-256 in `call_recordings` makes substitution or loss detectable.
 - **Twilio-side copies remain.** We do not delete the recording at Twilio after storing it (that is a retention-job step, open question 4), so a recording that failed to ingest can be recovered from the SID in its audit row.
+
+## The Inbound Parse receiver (built in M5)
+
+What an attacker who finds the URL reaches is as described above, with these specifics now true:
+
+- **The URL is `<key id>/<secret>`; the secret is 256 random bits**, stored only as a SHA-256, compared in constant time, and per firm. Guessing it is infeasible; a _leak_ (a pasted URL, a SendGrid screenshot, the platform's request logs) is the realistic risk, and the response is to mint a new key, switch SendGrid to it, and revoke the old one (no gap, nothing lost).
+- **What a holder of one firm's URL can do:** file forged email onto _that firm's_ matters if they also know a matter's slug (96 random bits, never exposed by the receiver: a wrong slug and another firm's slug are indistinguishable and neither is recorded). They cannot read anything, touch another firm, or alter an existing row.
+- **Forged mail is visible as forged:** SPF and DKIM verdicts are stored on the row; spoofed mail that arrives with `fail`/`softfail` says so, and the message's SHA-256 and `recorded_at` are the server's, not the sender's.
+- **A replayed Message-ID cannot overwrite a real email:** the first stands; a different body under the same ID raises an `email.duplicate_mismatch` audit row.
+- **Hostile content:** the message is parsed with a nesting limit and a header-size limit; attachments are stored as opaque bytes (never opened, never served with the sender's content type) with a sniffed type recorded beside the claimed one; HTML bodies are stored as plain text. There is no malware scanner (open question 6).
+- **Resource use:** requests over 32 MB are refused from the header; a 30 MB message is held in memory while parsed.
+- **Absence:** mail over the provider's 30 MB limit never arrives and leaves no trace; see `INBOUND_EMAIL_LIMITATION` and `recordUncapturedEmail`.

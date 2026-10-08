@@ -1,6 +1,7 @@
 import { assertLocalTarget } from './local-env';
 import type { LocalEnv } from './local-env';
-import { interpolate, loadFixture, loadScenario, newVars } from './fixtures';
+import { interpolate, loadFixture, loadScenario, loadSendgridFixture, newVars } from './fixtures';
+import { replaySendgrid } from './replay-sendgrid';
 import type { Fixture, Vars } from './fixtures';
 import { signTwilioRequest } from './twilio-sign';
 
@@ -82,11 +83,14 @@ export async function runScenario(
   for (const step of scenario.steps) {
     // A step may happen "later": refresh the clock-based variable per step.
     const stepVars = { ...vars, startedSeconds: vars['startedSeconds'] ?? '' };
-    const result = await replayFixture(loadFixture(step.fixture), {
-      env,
-      vars: stepVars,
-      tamper: step.tamper,
-    });
+    const result =
+      step.provider === 'sendgrid'
+        ? await replaySendgrid(loadSendgridFixture(step.fixture), { env, vars: stepVars })
+        : await replayFixture(loadFixture(step.fixture), {
+            env,
+            vars: stepVars,
+            tamper: step.tamper,
+          });
     const failures: string[] = [];
     if (result.status !== step.expect.status) {
       failures.push(`status ${result.status}, expected ${step.expect.status}`);

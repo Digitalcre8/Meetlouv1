@@ -4,6 +4,7 @@
 // apps/web.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
+  EMAIL_NOT_CAPTURED_EVENT,
   createMatterInput,
   createParticipantInput,
   err,
@@ -16,6 +17,7 @@ import {
 } from '@meetlou/domain';
 import type {
   CreateMatterInput,
+  EmailNotCapturedReason,
   CreateParticipantInput,
   FirmRow,
   FirmRole,
@@ -129,4 +131,40 @@ export async function createParticipant(
     .single();
   if (inserted.error !== null) return fromPostgrest(inserted.error);
   return ok(participantRow.parse(inserted.data));
+}
+
+export interface UncapturedEmailInput {
+  firmId: string;
+  matterId: string;
+  reason: EmailNotCapturedReason;
+  /** When the sender says they sent it. */
+  occurredAt: Date;
+}
+
+/**
+ * A fee earner records that an email was sent to a matter but never arrived (most often because
+ * it exceeded the email provider's 30 MB limit, which drops it before it reaches us). The gap
+ * becomes a fact on the timeline instead of an absence the file would silently hide.
+ */
+export async function recordUncapturedEmail(
+  db: SupabaseClient,
+  input: UncapturedEmailInput,
+  actorUserId: string,
+): Promise<Result<{ eventId: string }, RecordError>> {
+  const inserted = await db
+    .from('events')
+    .insert({
+      firm_id: input.firmId,
+      matter_id: input.matterId,
+      kind: EMAIL_NOT_CAPTURED_EVENT,
+      visibility: 'firm',
+      occurred_at: input.occurredAt.toISOString(),
+      actor_kind: 'fee_earner',
+      actor_id: actorUserId,
+      summary: `email not captured: ${input.reason}`,
+    })
+    .select('id')
+    .single();
+  if (inserted.error !== null) return fromPostgrest(inserted.error);
+  return ok({ eventId: z.object({ id: z.uuid() }).parse(inserted.data).id });
 }

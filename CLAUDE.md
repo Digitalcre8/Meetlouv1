@@ -70,7 +70,7 @@ packages/domain/     Types, zod schemas, constants, clock, redacting logger. No 
 packages/capture/    Webhook handlers as (Request, Deps) => Response; consent, signature
                      checks, threading, WAV header parsing. Web-standard APIs only (runs in Deno and Node).
 packages/records/    Server-side helpers: createMatter, createParticipant, getSessionFirm (any client, RLS-bound).
-                     `@meetlou/records/admin` (createFirm, createFeeEarner) needs the service role: never import it from apps/web.
+                     `@meetlou/records/admin` (createFirm, createFeeEarner, createInboundEmailKey) needs the service role: never import it from apps/web.
 packages/providers/  Transcriber and Summariser interfaces + deterministic fakes. Vendor adapters live here.
 packages/retention/  Retention calculation, legal hold checks, erasure runner.
 tools/harness/       Local CLI that signs and replays fixtures against a local stack.
@@ -116,7 +116,8 @@ CI (`.github/workflows/ci.yml`) runs exactly `pnpm verify`'s steps. If it passes
 
 - Code that runs under Deno (everything `supabase/functions/*` imports: `packages/capture`, `packages/domain`) uses **explicit `.ts` extensions on relative imports** and only the dependencies mapped in the function's `deno.json` (`zod`, `@supabase/supabase-js`). Node-only APIs (`node:*`, `process`, `Buffer`) are banned there. `supabase/functions/**` is excluded from the Node tsconfig and ESLint and checked by `pnpm deno:check`.
 - Edge functions are **thin**: read configuration, build the service-role client, call a handler from `packages/capture`. They are deployed with `verify_jwt = false` only when the provider cannot send a JWT, and then the handler's own authentication is mandatory.
-- Webhook handlers build the URL they verify from configuration, never from the request.
+- Webhook handlers build the URL they verify from configuration, never from the request. When the URL _is_ the credential (Inbound Parse), it is never logged or returned, and every authentication failure is one indistinguishable bare 404.
+- **Retry policy for webhooks:** answer 2xx for anything that can never succeed (and audit it), 5xx only for failures that might clear. A provider that retries on non-2xx (SendGrid does, for days) turns a permanent failure answered 4xx into a flood.
 
 ### SQL and Supabase
 
@@ -174,4 +175,5 @@ Auth: sign-in is email and password through Supabase Auth. **Public sign-up is d
 - The harness signs for the _configured public URL_ but sends to localhost, which is how it proves the function ignores its Host.
 - It refuses to talk to anything but localhost. Add a fixture per provider request shape you handle; add a scenario per behaviour you promise.
 - `fixtures/audio/*.wav` are tiny deterministic WAVs (2 s, 8 kHz, 16-bit; stereo has a different tone per channel, mono is the mixdown). `FakeTwilio` serves them like Twilio's API does: **stereo only if `RequestedChannels=2` is asked for**, a mono mixdown otherwise; it can also be told to ignore the request, truncate, return HTML, 404, or fail once. Tests that need an unsuppressed recording use a fresh matter, because the near-duplicate guard compares recordings on one matter.
-- SendGrid fixtures will live in `fixtures/sendgrid/` in the same shape when M5 lands.
+- `fixtures/sendgrid/*.json` are captured Inbound Parse requests in raw-MIME mode: the form fields SendGrid adds (`envelope`, `SPF`, `dkim`, ...) plus an `emailFile` under `fixtures/sendgrid/messages/*.eml` (LF in the repo, sent as CRLF; `{{messageId}}`, `{{slug}}` etc. are filled per run, because email rows cannot be deleted and Message-IDs are idempotency keys). The URL credential comes from the seed (`seedVars`). The local key secret is a made-up constant in `seed.ts`; real ones come from `createInboundEmailKey`.
+- Scenarios can mix providers: a step says `"provider": "sendgrid"`.

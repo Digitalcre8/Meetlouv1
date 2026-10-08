@@ -1,0 +1,16 @@
+{
+  "description": "A message with no Message-ID header.",
+  "request": {
+    "method": "POST",
+    "path": "/{{inboundKeyId}}/{{inboundSecret}}",
+    "fields": {
+      "envelope": "{\"to\":[\"{{slug}}@{{mailDomain}}\"],\"from\":\"sarah.whitfield@example.org\"}",
+      "SPF": "pass",
+      "dkim": "{@example.org : pass}",
+      "sender_ip": "198.51.100.7",
+      "spam_score": "0.1",
+      "charsets": "{\"to\":\"UTF-8\",\"subject\":\"UTF-8\",\"from\":\"UTF-8\"}"
+    },
+    "emailFile": "messages/no-message-id.eml"
+  }
+}

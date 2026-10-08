@@ -1,0 +1,31 @@
+From: Sarah Whitfield <sarah.whitfield@example.org>
+To: {{slug}}@{{mailDomain}}
+Subject: Completed TA6 and the invoice
+Message-ID: <{{messageId}}>
+Date: Thu, 08 Oct 2026 15:30:00 +0100
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mixed-boundary-1"
+
+--mixed-boundary-1
+Content-Type: text/plain; charset=utf-8
+
+Please find the completed TA6 attached, and the invoice from the surveyor.
+
+--mixed-boundary-1
+Content-Type: application/pdf; name="TA6-property-information.pdf"
+Content-Disposition: attachment; filename="TA6-property-information.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKJSBzeW50aGV0aWMgVEE2IGZpeHR1cmUsIG5vdCBhIHJlYWwgZm9ybQoxIDAgb2Jq
+PDw+PmVuZG9iagp0cmFpbGVyPDw+PgolJUVPRgo=
+
+--mixed-boundary-1
+Content-Type: application/pdf; name="surveyor-invoice.pdf"
+Content-Disposition: attachment; filename="surveyor-invoice.pdf"
+Content-Transfer-Encoding: base64
+
+TVqQAAMAc3ludGhldGljIGZpeHR1cmU6IHByZXRlbmRzIHRvIGJlIGFuIGludm9pY2UgYnV0IHN0
+YXJ0cyBsaWtlIGEgV2luZG93cyBleGVjdXRhYmxlAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBka
+GxwdHh8gISIjJCUmJw==
+
+--mixed-boundary-1--

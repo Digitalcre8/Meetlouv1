@@ -418,3 +418,8 @@ enabled = true
 # every request with X-Twilio-Signature instead.
 [functions.twilio-voice]
 verify_jwt = false
+
+# SendGrid Inbound Parse cannot present a Supabase JWT either. The secret in the URL path is
+# the credential, verified in constant time by the handler.
+[functions.sendgrid-inbound]
+verify_jwt = false

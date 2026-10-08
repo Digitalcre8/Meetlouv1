@@ -1,8 +1,10 @@
 import { FakeTwilio } from './fake-twilio';
 import { writeAudioFixtures } from './make-audio';
-import { listFixtures, loadFixture, newVars } from './fixtures';
+import { listFixtures, loadFixture, loadSendgridFixture, newVars } from './fixtures';
 import { localEnv } from './local-env';
 import { replayFixture, runScenario } from './replay';
+import { replaySendgrid } from './replay-sendgrid';
+import { seedArmstrong, seedVars } from './seed';
 import { serveFunctions, stopFunctions } from './serve';
 
 const [command, name, ...flags] = process.argv.slice(2);
@@ -28,16 +30,19 @@ async function main(): Promise<number> {
       stopFunctions();
       return 0;
     case 'list': {
-      const { fixtures, scenarios } = listFixtures();
-      console.log(`fixtures:\n  ${fixtures.join('\n  ')}\nscenarios:\n  ${scenarios.join('\n  ')}`);
+      const { fixtures, sendgrid, scenarios } = listFixtures();
+      console.log(
+        `twilio fixtures:\n  ${fixtures.join('\n  ')}\nsendgrid fixtures:\n  ${sendgrid.join('\n  ')}\nscenarios:\n  ${scenarios.join('\n  ')}`,
+      );
       return 0;
     }
     case 'replay': {
       if (name === undefined)
         throw new Error('usage: harness replay <fixture|scenario> [--tamper]');
-      const { fixtures, scenarios } = listFixtures();
+      const { fixtures, sendgrid, scenarios } = listFixtures();
+      const vars = { ...newVars(), ...seedVars(await seedArmstrong(env)) };
       if (scenarios.includes(name)) {
-        const run = await runScenario(name, env);
+        const run = await runScenario(name, env, vars);
         for (const step of run.steps) {
           const verdict = step.failures.length === 0 ? 'ok  ' : 'FAIL';
           console.log(
@@ -50,10 +55,15 @@ async function main(): Promise<number> {
       if (fixtures.includes(name)) {
         const result = await replayFixture(loadFixture(name), {
           env,
-          vars: newVars(),
+          vars,
           tamper: flags.includes('--tamper'),
           unsigned: flags.includes('--unsigned'),
         });
+        console.log(`${result.status} ${result.contentType ?? ''}\n${result.body}`);
+        return 0;
+      }
+      if (sendgrid.includes(name)) {
+        const result = await replaySendgrid(loadSendgridFixture(name), { env, vars });
         console.log(`${result.status} ${result.contentType ?? ''}\n${result.body}`);
         return 0;
       }

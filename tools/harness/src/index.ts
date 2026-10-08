@@ -4,6 +4,7 @@ export * from './fixtures';
 export * from './make-audio';
 export * from './local-env';
 export * from './replay';
+export * from './replay-sendgrid';
 export * from './seed';
 export * from './serve';
 export * from './twilio-sign';

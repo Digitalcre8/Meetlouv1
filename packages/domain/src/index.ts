@@ -1,3 +1,4 @@
+export * from './email.ts';
 export * from './inbound-address.ts';
 export * from './logger.ts';
 export * from './recordings.ts';

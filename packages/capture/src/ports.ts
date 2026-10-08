@@ -106,3 +106,63 @@ export interface ObjectStorage {
     contentType: string,
   ): Promise<'created' | 'exists'>;
 }
+
+// --- SendGrid Inbound Parse --------------------------------------------------------------------
+
+export interface InboundKey {
+  firmId: string;
+  /** SHA-256 (hex) of the secret in the URL. The secret itself is never stored. */
+  secretSha256: string;
+  revoked: boolean;
+}
+
+export interface IngestEmailInput {
+  matterId: string;
+  messageId: string;
+  messageIdSynthesised: boolean;
+  inReplyTo: string | null;
+  references: string[];
+  fromAddress: string;
+  to: string[];
+  cc: string[];
+  subject: string | null;
+  sentAt: Date | null;
+  rawStoragePath: string;
+  rawSha256: string;
+  bodyTextStoragePath: string | null;
+  bodyHtmlStoragePath: string | null;
+  /** The provider's verdicts, verbatim: evidence, not log lines. */
+  spfResult: string | null;
+  dkimResult: string | null;
+  attachments: {
+    ordinal: number;
+    filename: string;
+    contentType: string;
+    sniffedContentType: string;
+    byteLength: number;
+    sha256: string;
+    storagePath: string;
+  }[];
+}
+
+export type EmailIssue = 'email.unrouted' | 'email.rejected' | 'email.duplicate_mismatch';
+
+export interface InboundEmailStore {
+  findKey(keyId: string): Promise<InboundKey | null>;
+  findMailDomain(firmId: string): Promise<string | null>;
+  /** The matter with this slug IF it belongs to this firm; null otherwise (no oracle across firms). */
+  findMatterBySlug(firmId: string, slug: string): Promise<{ matterId: string } | null>;
+  findEmail(
+    matterId: string,
+    messageId: string,
+  ): Promise<{ emailId: string; rawSha256: string } | null>;
+  /** One transaction: email, attachments, events. Idempotent on (matter, Message-ID). */
+  ingest(input: IngestEmailInput): Promise<{ emailId: string; created: boolean }>;
+  recordIssue(input: {
+    action: EmailIssue;
+    firmId: string;
+    emailSha256: string | null;
+    recipientDomain: string | null;
+    reason: string;
+  }): Promise<void>;
+}

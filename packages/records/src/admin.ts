@@ -75,3 +75,50 @@ export async function createFeeEarner(
     role: i.role,
   });
 }
+
+export interface InboundEmailKey {
+  keyId: string;
+  /** Shown once. Only its SHA-256 is stored. */
+  secret: string;
+  /** Append to the function URL: https://<project>.supabase.co/functions/v1/sendgrid-inbound + this. */
+  urlPath: string;
+}
+
+const hex = (bytes: Uint8Array) =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+
+export async function sha256Hex(value: string): Promise<string> {
+  return hex(
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))),
+  );
+}
+
+/** Register a secret you already hold (the harness's fixed local one). Prefer createInboundEmailKey. */
+export async function registerInboundEmailKey(
+  admin: SupabaseClient,
+  firmId: string,
+  secret: string,
+): Promise<Result<InboundEmailKey, RecordError>> {
+  if (!/^[0-9a-f]{64}$/.test(secret)) {
+    return err({ code: 'invalid_input', message: 'invalid: secret' });
+  }
+  const registered = await admin.rpc('register_inbound_email_key', {
+    p_firm_id: firmId,
+    p_secret_sha256: await sha256Hex(secret),
+  });
+  if (registered.error !== null) return fromPostgrest(registered.error);
+  const keyId = z.uuid().parse(registered.data);
+  return ok({ keyId, secret, urlPath: `/${keyId}/${secret}` });
+}
+
+/**
+ * Mint a new Inbound Parse URL credential for a firm: 256 random bits, returned once. Give
+ * `urlPath` to whoever configures the SendGrid hostname, and treat it like a password.
+ */
+export async function createInboundEmailKey(
+  admin: SupabaseClient,
+  firmId: string,
+): Promise<Result<InboundEmailKey, RecordError>> {
+  const secret = hex(crypto.getRandomValues(new Uint8Array(32)));
+  return registerInboundEmailKey(admin, firmId, secret);
+}

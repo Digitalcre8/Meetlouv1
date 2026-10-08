@@ -1,0 +1,13 @@
+{
+  "description": "A message addressed to a slug that belongs to no matter: a mistyped address.",
+  "request": {
+    "method": "POST",
+    "path": "/{{inboundKeyId}}/{{inboundSecret}}",
+    "fields": {
+      "envelope": "{\"to\":[\"14meadowroad-000000000000000000000000@{{mailDomain}}\"],\"from\":\"sarah.whitfield@example.org\"}",
+      "SPF": "pass",
+      "dkim": "{@example.org : pass}"
+    },
+    "emailFile": "messages/client-first.eml"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Sarah Whitfield emails the matter address. Parsed by SendGrid in raw mode: envelope, SPF/DKIM verdicts, and the full MIME in the email field.",
+  "request": {
+    "method": "POST",
+    "path": "/{{inboundKeyId}}/{{inboundSecret}}",
+    "fields": {
+      "envelope": "{\"to\":[\"{{slug}}@{{mailDomain}}\"],\"from\":\"sarah.whitfield@example.org\"}",
+      "SPF": "pass",
+      "dkim": "{@example.org : pass}",
+      "sender_ip": "198.51.100.7",
+      "spam_score": "0.1",
+      "charsets": "{\"to\":\"UTF-8\",\"subject\":\"UTF-8\",\"from\":\"UTF-8\"}"
+    },
+    "emailFile": "messages/client-first.eml"
+  }
+}

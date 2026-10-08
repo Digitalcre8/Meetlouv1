@@ -1,0 +1,21 @@
+From: Sarah Whitfield <sarah.whitfield@example.org>
+To: {{slug}}@{{mailDomain}}
+Subject: Mortgage offer and deposit for 14 Meadow Road
+Message-ID: <{{messageId}}>
+Date: Thu, 08 Oct 2026 09:15:00 +0100
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="alt-boundary-1"
+
+--alt-boundary-1
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+The mortgage offer has come through. Please confirm the deposit amount.
+
+Sarah
+--alt-boundary-1
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>Hello,</p><p>The mortgage offer has come through. Please confirm the deposit amount.</p><script>alert(1)</script></body></html>
+--alt-boundary-1--

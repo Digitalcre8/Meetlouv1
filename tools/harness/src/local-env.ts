@@ -27,6 +27,8 @@ export interface LocalEnv {
   };
   /** Where `harness serve` listens, and where replay sends requests. */
   functionsUrl: string;
+  /** The sendgrid-inbound function (the Inbound Parse receiver). */
+  sendgridUrl: string;
   apiUrl: string;
   anonKey: string;
   serviceRoleKey: string;
@@ -46,6 +48,7 @@ export function localEnv(): LocalEnv {
         'https://meetlou-local.example.org/functions/v1/twilio-voice',
     },
     functionsUrl: process.env['FUNCTIONS_URL'] ?? 'http://127.0.0.1:54326/twilio-voice',
+    sendgridUrl: process.env['SENDGRID_FUNCTION_URL'] ?? 'http://127.0.0.1:54329/sendgrid-inbound',
     apiUrl: process.env['SUPABASE_URL'] ?? 'http://127.0.0.1:54321',
     anonKey: process.env['SUPABASE_ANON_KEY'] ?? signJwt(secret, claims('anon')),
     serviceRoleKey:
@@ -66,8 +69,10 @@ export function assertLocal(env: LocalEnv): void {
 
 /** Replay signs requests with a test token, so it only ever talks to localhost. */
 export function assertLocalTarget(env: LocalEnv): void {
-  const host = new URL(env.functionsUrl).hostname;
-  if (host !== '127.0.0.1' && host !== 'localhost') {
-    throw new Error(`refusing to replay at a non-local target (${host})`);
+  for (const url of [env.functionsUrl, env.sendgridUrl]) {
+    const host = new URL(url).hostname;
+    if (host !== '127.0.0.1' && host !== 'localhost') {
+      throw new Error(`refusing to replay at a non-local target (${host})`);
+    }
   }
 }

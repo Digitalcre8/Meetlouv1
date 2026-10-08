@@ -1,0 +1,14 @@
+{
+  "description": "A forwarded message: the To header names someone else, but the SMTP envelope recipient is the matter address. Routing must follow the envelope.",
+  "request": {
+    "method": "POST",
+    "path": "/{{inboundKeyId}}/{{inboundSecret}}",
+    "fields": {
+      "envelope": "{\"to\":[\"{{slug}}@{{mailDomain}}\"],\"from\":\"sarah.whitfield@example.org\"}",
+      "SPF": "softfail",
+      "dkim": "{@example.org : fail}",
+      "sender_ip": "198.51.100.8"
+    },
+    "emailFile": "messages/forwarded.eml"
+  }
+}

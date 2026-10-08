@@ -15,6 +15,8 @@ export interface LogFields {
   firmId?: string;
   callId?: string;
   recordingSid?: string;
+  emailId?: string;
+  attachments?: number;
   channels?: number;
   /** Suppression reasons applied, comma-separated. */
   suppressed?: string;
