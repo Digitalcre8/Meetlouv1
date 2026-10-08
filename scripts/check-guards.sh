@@ -12,8 +12,8 @@ if grep -rIn --exclude-dir=node_modules --exclude-dir=.next \
   fail=1
 fi
 if grep -rIn --exclude-dir=node_modules --exclude-dir=.next \
-  -e '@meetlou/records/admin' -e '@meetlou/harness' apps/web 2>/dev/null; then
-  echo "GUARD FAIL: apps/web must not import the operator (service role) helpers." >&2
+  -e '@meetlou/records/admin' -e '@meetlou/harness' -e '@meetlou/pipeline' -e '@meetlou/providers' apps/web 2>/dev/null; then
+  echo "GUARD FAIL: apps/web must not import the operator helpers (service role, pipeline, model providers)." >&2
   fail=1
 fi
 if grep -rIn -E 'NEXT_PUBLIC_[A-Z_]*(SERVICE|SECRET|TOKEN)' \

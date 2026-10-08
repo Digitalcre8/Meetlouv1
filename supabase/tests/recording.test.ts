@@ -375,19 +375,19 @@ describe('recording-status: guards set a reason and delete nothing', () => {
     const { callSid } = await freshCall(matterId);
     const { recordingSid } = await deliver(callSid);
     const [row] = await recordingRows(recordingSid);
-    const insert = (speakers: number, job: string) =>
+    const insert = (speakers: number, job: string, version: number) =>
       run(
         service,
         `insert into transcripts (firm_id, matter_id, call_recording_id, provider, provider_job_id,
-                                  diarised, speaker_count, body_storage_path, sha256)
-         values ($1, $2, $3, 'fake', $4, true, $5, 'transcripts/x', $6)`,
-        [seed.firm.id, matterId, row?.id, job, speakers, 'e'.repeat(64)],
+                                  diarised, speaker_count, body_storage_path, sha256, version)
+         values ($1, $2, $3, 'fake', $4, true, $5, 'transcripts/x', $6, $7)`,
+        [seed.firm.id, matterId, row?.id, job, speakers, 'e'.repeat(64), version],
         { commit: true },
       );
 
-    await insert(2, 'two-speakers');
+    await insert(2, 'two-speakers', 1);
     expect(await suppressionsFor(row?.id ?? '')).toEqual([]);
-    await insert(1, 'one-speaker');
+    await insert(1, 'one-speaker', 2);
     expect((await suppressionsFor(row?.id ?? '')).map((s) => s.reason)).toEqual(['single_speaker']);
     expect(await eventKinds(row?.id ?? '')).toContain('recording.suppressed');
     // Still stored and still on the file.

@@ -1,0 +1,65 @@
+{
+  "id": "06-build-over-agreement",
+  "description": "Public sewer under an extension; build-over agreement; fee earner to raise an enquiry.",
+  "callDate": "2026-10-20",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 1,
+      "text": "The drainage search shows a public sewer running under the extension at the back of the property."
+    },
+    {
+      "startSeconds": 8.0,
+      "channel": 0,
+      "text": "What does that mean for us?"
+    },
+    {
+      "startSeconds": 11.0,
+      "channel": 1,
+      "text": "We need a build-over agreement from the water company, or confirmation that one was granted when the extension was built."
+    },
+    {
+      "startSeconds": 20.0,
+      "channel": 0,
+      "text": "I don't think the sellers mentioned one."
+    },
+    {
+      "startSeconds": 24.0,
+      "channel": 1,
+      "text": "I'll raise an enquiry with the sellers' solicitors today and ask for a copy. If there isn't one, we'll need to apply, and that usually takes about four weeks."
+    },
+    {
+      "startSeconds": 36.0,
+      "channel": 0,
+      "text": "Do I need to do anything?"
+    },
+    {
+      "startSeconds": 39.0,
+      "channel": 1,
+      "text": "Not at the moment."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [
+          ["enquir", "ask", "request", "raise"],
+          [
+            "build-over",
+            "build over",
+            "agreement",
+            "copy",
+            "sellers' solicitors",
+            "sellers solicitors"
+          ]
+        ],
+        "owner": ["fee_earner"]
+      }
+    ],
+    "keyDates": [],
+    "mustMention": [["build-over", "build over"], ["sewer"]],
+    "mustNotMention": ["you need to apply", "you must apply"],
+    "alsoAllowDates": ["2026-10-20"]
+  }
+}

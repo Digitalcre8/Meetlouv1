@@ -1,0 +1,51 @@
+{
+  "id": "10-chain-delay",
+  "description": "Chain delay: no date can be given. Two commitments by the fee earner.",
+  "callDate": "2026-10-27",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "Our buyers' purchase is delayed, isn't it? Have we got a completion date yet?"
+    },
+    {
+      "startSeconds": 7.0,
+      "channel": 1,
+      "text": "Not yet, I'm afraid. The seller of the house your buyers are buying is waiting on their own searches, so the chain can't fix a date."
+    },
+    {
+      "startSeconds": 18.0,
+      "channel": 0,
+      "text": "This is really stressful. We've already given notice on the rental."
+    },
+    {
+      "startSeconds": 24.0,
+      "channel": 1,
+      "text": "I understand. I'll phone the chain solicitor tomorrow and I'll update you by Thursday whatever the answer is."
+    },
+    {
+      "startSeconds": 33.0,
+      "channel": 0,
+      "text": "Please do."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["phone", "call", "contact", "speak", "chase"]],
+        "owner": ["fee_earner"],
+        "due": ["2026-10-28"]
+      },
+      {
+        "match": [["update"]],
+        "owner": ["fee_earner"],
+        "due": ["2026-10-29"]
+      }
+    ],
+    "keyDates": [],
+    "mustMention": [["chain"]],
+    "mustNotMention": ["completion is", "completion on", "completes on", "completion will be"],
+    "alsoAllowDates": []
+  }
+}

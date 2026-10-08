@@ -1,0 +1,63 @@
+{
+  "id": "02-deposit-amount",
+  "description": "Deposit figure stated in words; transfer promised for a weekday.",
+  "callDate": "2026-10-12",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "Hi, I need to know exactly how much deposit I have to pay on the purchase."
+    },
+    {
+      "startSeconds": 6.0,
+      "channel": 1,
+      "text": "The purchase price is two hundred and fifty thousand pounds and the contract asks for a ten per cent deposit, so that is twenty five thousand pounds."
+    },
+    {
+      "startSeconds": 17.0,
+      "channel": 0,
+      "text": "And when does that need to be in?"
+    },
+    {
+      "startSeconds": 20.5,
+      "channel": 1,
+      "text": "We need the deposit in our client account by Monday the 19th of October, ahead of exchange."
+    },
+    {
+      "startSeconds": 28.0,
+      "channel": 0,
+      "text": "Fine. I'll transfer it on Friday."
+    },
+    {
+      "startSeconds": 32.0,
+      "channel": 1,
+      "text": "Please send me the transfer confirmation as soon as it's done and I'll confirm when it lands."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["transfer", "pay"]],
+        "owner": ["caller"],
+        "due": ["2026-10-16"]
+      },
+      {
+        "match": [["confirmation", "proof", "receipt"]],
+        "owner": ["caller"]
+      },
+      {
+        "match": [["confirm"], ["receiv", "land", "arriv"]],
+        "owner": ["fee_earner"]
+      }
+    ],
+    "keyDates": [
+      {
+        "date": "2026-10-19"
+      }
+    ],
+    "mustMention": [["25,000", "twenty five thousand", "twenty-five thousand", "25k"]],
+    "mustNotMention": ["£2,500", "250,000 deposit", "£250,000 deposit"],
+    "alsoAllowDates": []
+  }
+}

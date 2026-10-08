@@ -168,3 +168,134 @@ export async function recordUncapturedEmail(
   if (inserted.error !== null) return fromPostgrest(inserted.error);
   return ok({ eventId: z.object({ id: z.uuid() }).parse(inserted.data).id });
 }
+
+// --- the approval gate (rule 4) ---------------------------------------------------------------
+
+const outputRef = z.object({ id: z.uuid(), firm_id: z.uuid(), matter_id: z.uuid() });
+
+async function currentUserId(db: SupabaseClient): Promise<string | null> {
+  const user = await db.auth.getUser();
+  return user.error === null ? user.data.user.id : null;
+}
+
+/**
+ * A fee earner approves a generated output for the client. Run through the fee earner's own
+ * session: the database allows the insert only for a fee earner of the output's firm, as
+ * themselves. The service role cannot do this, by design, and neither can a COLP or a participant.
+ */
+export async function approveOutput(
+  db: SupabaseClient,
+  outputId: string,
+): Promise<Result<{ approvalId: string }, RecordError>> {
+  const userId = await currentUserId(db);
+  if (userId === null) return err({ code: 'not_permitted', message: 'not signed in' });
+
+  const output = await db
+    .from('generated_outputs')
+    .select('id, firm_id, matter_id')
+    .eq('id', outputId)
+    .maybeSingle();
+  if (output.error !== null) return fromPostgrest(output.error);
+  if (output.data === null) {
+    return err({ code: 'not_permitted', message: 'output not found or not visible to this user' });
+  }
+  const ref = outputRef.parse(output.data);
+
+  const inserted = await db
+    .from('approvals')
+    .insert({
+      firm_id: ref.firm_id,
+      matter_id: ref.matter_id,
+      generated_output_id: ref.id,
+      approved_by: userId,
+    })
+    .select('id')
+    .single();
+  if (inserted.error !== null) return fromPostgrest(inserted.error);
+  return ok({ approvalId: z.object({ id: z.uuid() }).parse(inserted.data).id });
+}
+
+/** Withdraw an approval. The client stops seeing the summary at once; approve a newer version instead. */
+export async function withdrawApproval(
+  db: SupabaseClient,
+  approvalId: string,
+): Promise<Result<{ withdrawalId: string }, RecordError>> {
+  const userId = await currentUserId(db);
+  if (userId === null) return err({ code: 'not_permitted', message: 'not signed in' });
+
+  const approval = await db
+    .from('approvals')
+    .select('id, firm_id, matter_id')
+    .eq('id', approvalId)
+    .maybeSingle();
+  if (approval.error !== null) return fromPostgrest(approval.error);
+  if (approval.data === null) {
+    return err({
+      code: 'not_permitted',
+      message: 'approval not found or not visible to this user',
+    });
+  }
+  const ref = outputRef.parse(approval.data);
+
+  const inserted = await db
+    .from('approval_withdrawals')
+    .insert({
+      firm_id: ref.firm_id,
+      matter_id: ref.matter_id,
+      approval_id: ref.id,
+      withdrawn_by: userId,
+    })
+    .select('id')
+    .single();
+  if (inserted.error !== null) return fromPostgrest(inserted.error);
+  return ok({ withdrawalId: z.object({ id: z.uuid() }).parse(inserted.data).id });
+}
+
+export interface ClientVisibleSummary {
+  outputId: string;
+  matterId: string;
+  callId: string;
+  version: number;
+  approvedAt: string;
+  content: { summary: string; actions: unknown[]; keyDates: unknown[] };
+}
+
+/**
+ * THE client-visible route. It reads `client_visible_outputs`, which is built from the approval
+ * rows: an output with no approval, a withdrawn approval, or a newer version is not here. Nothing
+ * that serves a client may read generated_outputs directly.
+ */
+export async function getClientVisibleSummaries(
+  db: SupabaseClient,
+): Promise<Result<ClientVisibleSummary[], RecordError>> {
+  const rows = await db
+    .from('client_visible_outputs')
+    .select('output_id, matter_id, call_id, version, content, approved_at');
+  if (rows.error !== null) return fromPostgrest(rows.error);
+  return ok(
+    z
+      .array(
+        z.object({
+          output_id: z.uuid(),
+          matter_id: z.uuid(),
+          call_id: z.uuid(),
+          version: z.number().int(),
+          approved_at: z.string(),
+          content: z.object({
+            summary: z.string(),
+            actions: z.array(z.unknown()),
+            keyDates: z.array(z.unknown()),
+          }),
+        }),
+      )
+      .parse(rows.data)
+      .map((r) => ({
+        outputId: r.output_id,
+        matterId: r.matter_id,
+        callId: r.call_id,
+        version: r.version,
+        approvedAt: r.approved_at,
+        content: r.content,
+      })),
+  );
+}

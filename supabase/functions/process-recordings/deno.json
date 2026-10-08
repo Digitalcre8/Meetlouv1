@@ -1,0 +1,11 @@
+{
+  "imports": {
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.132.1",
+    "@anthropic-ai/sdk/helpers/zod": "npm:@anthropic-ai/sdk@0.132.1/helpers/zod",
+    "@meetlou/domain": "../../../packages/domain/src/index.ts",
+    "@meetlou/pipeline": "../../../packages/pipeline/src/index.ts",
+    "@meetlou/providers": "../../../packages/providers/src/index.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.3",
+    "zod": "npm:zod@4.6.5"
+  }
+}

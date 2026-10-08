@@ -1,0 +1,62 @@
+{
+  "id": "09-mortgage-offer",
+  "description": "Offer expiry date, a deadline, and two commitments.",
+  "callDate": "2026-10-26",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "The lender sent my mortgage offer. It says it's valid until the 18th of December."
+    },
+    {
+      "startSeconds": 7.0,
+      "channel": 1,
+      "text": "Thanks, I've got it here. I'll send you the report on title for signature this week."
+    },
+    {
+      "startSeconds": 14.0,
+      "channel": 0,
+      "text": "And what do I need to do?"
+    },
+    {
+      "startSeconds": 17.0,
+      "channel": 1,
+      "text": "Please sign and return the mortgage deed in the post, ideally by Friday the 30th of October."
+    },
+    {
+      "startSeconds": 25.0,
+      "channel": 0,
+      "text": "I'll post it on Wednesday."
+    },
+    {
+      "startSeconds": 28.0,
+      "channel": 1,
+      "text": "Perfect. Remember the offer expires on the 18th of December, so we need to be through before then."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["report on title", "report"]],
+        "owner": ["fee_earner"]
+      },
+      {
+        "match": [["sign", "return", "post", "deed"]],
+        "owner": ["caller"],
+        "due": ["2026-10-28", "2026-10-30"]
+      }
+    ],
+    "keyDates": [
+      {
+        "date": "2026-12-18"
+      },
+      {
+        "date": "2026-10-30"
+      }
+    ],
+    "mustMention": [["mortgage offer", "offer"]],
+    "mustNotMention": ["18 november", "18th of november", "18th november"],
+    "alsoAllowDates": ["2026-10-28"]
+  }
+}

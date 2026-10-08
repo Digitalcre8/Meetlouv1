@@ -71,7 +71,9 @@ packages/capture/    Webhook handlers as (Request, Deps) => Response; consent, s
                      checks, threading, WAV header parsing. Web-standard APIs only (runs in Deno and Node).
 packages/records/    Server-side helpers: createMatter, createParticipant, getSessionFirm (any client, RLS-bound).
                      `@meetlou/records/admin` (createFirm, createFeeEarner, createInboundEmailKey) needs the service role: never import it from apps/web.
-packages/providers/  Transcriber and Summariser interfaces + deterministic fakes. Vendor adapters live here.
+packages/providers/  Transcriber and Summariser interfaces, the summary zod schema, the prompt, deterministic fakes, the rule-based baseline and the Claude adapter. Vendor adapters live here.
+packages/pipeline/   Transcribe -> store -> summarise -> store, as versions; the job runner. Knows nothing about which model is behind the interfaces.
+evals/               Golden transcripts with expected summaries, the committed score baseline, recorded model runs.
 packages/retention/  Retention calculation, legal hold checks, erasure runner.
 tools/harness/       Local CLI that signs and replays fixtures against a local stack.
 fixtures/            twilio/ and sendgrid/ webhook payloads, synthetic only. No real personal data, ever.
@@ -97,6 +99,7 @@ pnpm functions:serve  # serve supabase/functions/twilio-voice under Deno (Docker
 pnpm harness fake-twilio   # fake Twilio recordings API (serves fixtures/audio/*.wav) for recording downloads
 pnpm harness make-audio    # regenerate the deterministic WAV fixtures
 pnpm harness list     # fixtures and scenarios;  pnpm harness replay <fixture|scenario> [--tamper|--unsigned]
+pnpm eval [rule-based|oracle|anthropic]   # score a summariser on the golden set (evals/golden); `anthropic --record` spends money
 pnpm deno:check       # type-check the Deno edge functions
 pnpm seed        # Armstrong & Co / MTR-1001 on the local stack; idempotent; refuses non-local URLs
 ```
@@ -177,3 +180,12 @@ Auth: sign-in is email and password through Supabase Auth. **Public sign-up is d
 - `fixtures/audio/*.wav` are tiny deterministic WAVs (2 s, 8 kHz, 16-bit; stereo has a different tone per channel, mono is the mixdown). `FakeTwilio` serves them like Twilio's API does: **stereo only if `RequestedChannels=2` is asked for**, a mono mixdown otherwise; it can also be told to ignore the request, truncate, return HTML, 404, or fail once. Tests that need an unsuppressed recording use a fresh matter, because the near-duplicate guard compares recordings on one matter.
 - `fixtures/sendgrid/*.json` are captured Inbound Parse requests in raw-MIME mode: the form fields SendGrid adds (`envelope`, `SPF`, `dkim`, ...) plus an `emailFile` under `fixtures/sendgrid/messages/*.eml` (LF in the repo, sent as CRLF; `{{messageId}}`, `{{slug}}` etc. are filled per run, because email rows cannot be deleted and Message-IDs are idempotency keys). The URL credential comes from the seed (`seedVars`). The local key secret is a made-up constant in `seed.ts`; real ones come from `createInboundEmailKey`.
 - Scenarios can mix providers: a step says `"provider": "sendgrid"`.
+
+## Model output: the rules
+
+- **Rule four is enforced by the database.** An output has no visibility flag. A client's only route is `client_visible_outputs` (`getClientVisibleSummaries`), built from the approval row. Never read `generated_outputs` for anything that serves a client. Never add a boolean to say an output is shareable.
+- **A wrong summary is worse than none.** Validate with `summarySchema` after the model, store nothing on failure, and never "repair" output.
+- **The prompt is pinned.** `SYSTEM_PROMPT` and `PROMPT_VERSION` are checked by a test; changing the prompt means bumping the version, updating the pin, running `pnpm eval anthropic --record` and committing the new scores. CI fails if any golden-set metric gets worse, and if model runs were recorded under an older prompt.
+- **Add to the golden set when a summary is wrong in the wild.** One transcript, the expected actions and dates, what it must not say. The set only gets bigger.
+- **Channel is speaker only for two channels.** Use `speakerOf` / `labelSegments`; never infer speakers on mono audio.
+- **Re-runs are new versions.** Never update a transcript or an output; write the next version.

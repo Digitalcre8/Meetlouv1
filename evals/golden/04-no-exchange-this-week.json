@@ -1,0 +1,59 @@
+{
+  "id": "04-no-exchange-this-week",
+  "description": "Something ruled out. Must not be reported as agreed, and no date may be invented.",
+  "callDate": "2026-10-14",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "Are we exchanging this week? My landlord needs notice."
+    },
+    {
+      "startSeconds": 5.0,
+      "channel": 1,
+      "text": "No, I'm afraid we won't be exchanging this week. The buyer in the chain above is still waiting for their mortgage valuation."
+    },
+    {
+      "startSeconds": 14.0,
+      "channel": 0,
+      "text": "That's frustrating. Do you know when it might be?"
+    },
+    {
+      "startSeconds": 19.0,
+      "channel": 1,
+      "text": "I can't give you a date yet. I'll speak to the other side's solicitors tomorrow and update you straight after."
+    },
+    {
+      "startSeconds": 27.0,
+      "channel": 0,
+      "text": "Okay. I'll hold off giving notice then."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["speak", "call", "contact", "phone", "update", "chase"]],
+        "owner": ["fee_earner"],
+        "due": ["2026-10-15"]
+      },
+      {
+        "match": [["notice"]],
+        "owner": ["caller"]
+      }
+    ],
+    "keyDates": [],
+    "mustMention": [
+      [
+        "not exchang",
+        "won't exchange",
+        "will not exchange",
+        "no exchange",
+        "not be exchanging",
+        "not yet exchang"
+      ]
+    ],
+    "mustNotMention": ["will exchange on", "exchange on friday", "has exchanged", "exchanged on"],
+    "alsoAllowDates": []
+  }
+}

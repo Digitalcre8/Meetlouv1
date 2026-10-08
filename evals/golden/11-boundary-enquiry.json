@@ -1,0 +1,60 @@
+{
+  "id": "11-boundary-enquiry",
+  "description": "Enquiry reply about a fence; a deadline and a vague \"this weekend\".",
+  "callDate": "2026-10-29",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 1,
+      "text": "We've had the replies to our enquiries from the sellers' solicitors, and there's one point about the boundary they can't answer."
+    },
+    {
+      "startSeconds": 9.0,
+      "channel": 0,
+      "text": "What is it?"
+    },
+    {
+      "startSeconds": 11.0,
+      "channel": 1,
+      "text": "They say the plan is unclear about who owns the rear fence. Could you check with the neighbours and let me know by Tuesday the 3rd of November?"
+    },
+    {
+      "startSeconds": 22.0,
+      "channel": 0,
+      "text": "I'll ask them this weekend."
+    },
+    {
+      "startSeconds": 26.0,
+      "channel": 1,
+      "text": "Thanks. I'll tell the sellers' solicitors we're looking into it."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [
+          ["check", "ask", "find out", "speak", "confirm"],
+          ["neighbour", "fence", "owner", "boundary"]
+        ],
+        "owner": ["caller"],
+        "due": ["2026-11-03", "2026-10-31", "2026-11-01"]
+      },
+      {
+        "match": [
+          ["tell", "reply", "write", "inform", "let"],
+          ["solicitor", "seller"]
+        ],
+        "owner": ["fee_earner"]
+      }
+    ],
+    "keyDates": [
+      {
+        "date": "2026-11-03"
+      }
+    ],
+    "mustMention": [["fence", "boundary"]],
+    "mustNotMention": [],
+    "alsoAllowDates": ["2026-10-31", "2026-11-01", "2026-10-29"]
+  }
+}

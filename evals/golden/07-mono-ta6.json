@@ -1,0 +1,46 @@
+{
+  "id": "07-mono-ta6",
+  "description": "Mono recording: speakers cannot be told apart, so owners must not be asserted wrongly.",
+  "callDate": "2026-10-21",
+  "channels": 1,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "Good morning, I'm calling about the TA6 property information form. We haven't received the completed copy yet."
+    },
+    {
+      "startSeconds": 9.0,
+      "channel": 0,
+      "text": "Sorry, I've been away. I'll fill it in tonight and send it back by Friday."
+    },
+    {
+      "startSeconds": 16.0,
+      "channel": 0,
+      "text": "That's great. And the fittings and contents form, the TA10, is also outstanding."
+    },
+    {
+      "startSeconds": 23.0,
+      "channel": 0,
+      "text": "Oh, I didn't realise. I'll do both together."
+    },
+    {
+      "startSeconds": 28.0,
+      "channel": 0,
+      "text": "Once we have both we can send the contract pack to the other side."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["fill", "complete", "send", "return", "both"]],
+        "owner": ["caller", "unclear"],
+        "due": ["2026-10-23"]
+      }
+    ],
+    "keyDates": [],
+    "mustMention": [["ta6", "property information"]],
+    "mustNotMention": [],
+    "alsoAllowDates": ["2026-10-21"]
+  }
+}

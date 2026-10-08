@@ -10,6 +10,8 @@
   "dependencies": {
     "@meetlou/domain": "workspace:*",
     "@meetlou/harness": "workspace:*",
+    "@meetlou/pipeline": "workspace:*",
+    "@meetlou/providers": "workspace:*",
     "@meetlou/records": "workspace:*",
     "@supabase/supabase-js": "^2.117.3",
     "pg": "^8.23.1"

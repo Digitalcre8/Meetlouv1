@@ -8,5 +8,10 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1",
+    "@meetlou/domain": "workspace:*",
+    "zod": "^4.6.5"
   }
 }

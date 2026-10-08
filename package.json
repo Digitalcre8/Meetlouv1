@@ -19,7 +19,8 @@
     "seed": "pnpm --filter @meetlou/harness seed",
     "harness": "pnpm --silent --filter @meetlou/harness harness",
     "functions:serve": "pnpm --silent --filter @meetlou/harness harness serve",
-    "deno:check": "bash scripts/deno-check.sh"
+    "deno:check": "bash scripts/deno-check.sh",
+    "eval": "pnpm --silent --filter @meetlou/harness harness eval"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

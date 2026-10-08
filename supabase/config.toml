@@ -423,3 +423,7 @@ verify_jwt = false
 # the credential, verified in constant time by the handler.
 [functions.sendgrid-inbound]
 verify_jwt = false
+
+# The job runner is called with the service role key, so the platform's own JWT check stays on.
+[functions.process-recordings]
+verify_jwt = true

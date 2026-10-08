@@ -1,3 +1,18 @@
+import { AnthropicSummariser, RuleBasedSummariser } from '@meetlou/providers';
+import Anthropic from '@anthropic-ai/sdk';
+import {
+  CassetteSummariser,
+  OracleSummariser,
+  RecordingSummariser,
+  cassetteFingerprints,
+  evaluate,
+  formatReport,
+  goldenLookup,
+  loadGoldenSet,
+  promptFingerprint,
+  readBaseline,
+  writeBaseline,
+} from './eval';
 import { FakeTwilio } from './fake-twilio';
 import { writeAudioFixtures } from './make-audio';
 import { listFixtures, loadFixture, loadSendgridFixture, newVars } from './fixtures';
@@ -26,6 +41,35 @@ async function main(): Promise<number> {
     case 'make-audio':
       console.log(writeAudioFixtures().join('\n'));
       return 0;
+    case 'eval': {
+      // harness eval [rule-based|oracle|anthropic] [--record | --replay] [--update-baseline]
+      const provider = name ?? 'rule-based';
+      const cases = loadGoldenSet();
+      const lookup = goldenLookup(cases);
+      let summariser;
+      if (provider === 'rule-based') summariser = new RuleBasedSummariser();
+      else if (provider === 'oracle') summariser = new OracleSummariser(cases);
+      else if (provider === 'anthropic' && flags.includes('--record')) {
+        // Live: needs credentials (ANTHROPIC_API_KEY, or `ant auth login`), and spends real money.
+        summariser = new RecordingSummariser(new AnthropicSummariser(new Anthropic()), lookup);
+      } else if (provider === 'anthropic') {
+        summariser = new CassetteSummariser('anthropic', lookup);
+        if (cassetteFingerprints('anthropic').length === 0) {
+          console.log(
+            'anthropic: NOT SCORED. Nothing has been recorded. Run: pnpm eval anthropic --record',
+          );
+          return 0;
+        }
+      } else throw new Error(`unknown provider "${provider}"`);
+
+      const report = await evaluate(summariser, cases);
+      console.log(formatReport(report, readBaseline()));
+      if (flags.includes('--update-baseline')) {
+        writeBaseline(report);
+        console.log(`baseline updated for ${report.provider} (${promptFingerprint()})`);
+      }
+      return 0;
+    }
     case 'stop':
       stopFunctions();
       return 0;
@@ -71,7 +115,7 @@ async function main(): Promise<number> {
     }
     default:
       console.log(
-        'usage: harness <serve|stop|fake-twilio|make-audio|list|replay <name> [--tamper|--unsigned]>',
+        'usage: harness <serve|stop|fake-twilio|make-audio|list|eval [provider] [--record|--update-baseline]|replay <name> [--tamper|--unsigned]>',
       );
       return 2;
   }

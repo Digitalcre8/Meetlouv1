@@ -1,4 +1,5 @@
 export * from './clients';
+export * from './eval';
 export * from './fake-twilio';
 export * from './fixtures';
 export * from './make-audio';

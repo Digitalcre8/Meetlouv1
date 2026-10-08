@@ -1,0 +1,53 @@
+{
+  "id": "05-indemnity-insurance",
+  "description": "Missing building regulations certificate; indemnity insurance agreed; amount in words.",
+  "callDate": "2026-10-15",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 1,
+      "text": "The seller's solicitors have confirmed there's no building regulations certificate for the kitchen extension."
+    },
+    {
+      "startSeconds": 8.0,
+      "channel": 0,
+      "text": "Is that a problem?"
+    },
+    {
+      "startSeconds": 10.5,
+      "channel": 1,
+      "text": "It can be. The usual solution is a single indemnity insurance policy, which protects you and the lender. The quote is one hundred and eighty pounds."
+    },
+    {
+      "startSeconds": 22.0,
+      "channel": 0,
+      "text": "That's fine, please go ahead and arrange it."
+    },
+    {
+      "startSeconds": 26.0,
+      "channel": 1,
+      "text": "I'll arrange the policy today and it will be in place before exchange."
+    },
+    {
+      "startSeconds": 32.0,
+      "channel": 0,
+      "text": "Thanks."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [
+          ["arrange", "take out", "obtain", "put in place", "organise"],
+          ["polic", "insurance", "indemnity"]
+        ],
+        "owner": ["fee_earner"]
+      }
+    ],
+    "keyDates": [],
+    "mustMention": [["indemnity"], ["180", "one hundred and eighty"]],
+    "mustNotMention": ["£1,800", "£18,000", "£18.00"],
+    "alsoAllowDates": ["2026-10-15"]
+  }
+}

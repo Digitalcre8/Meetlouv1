@@ -1,0 +1,60 @@
+{
+  "id": "01-searches-ordered",
+  "description": "Searches ordered; client to send ID; fee earner to chase. One explicit date.",
+  "callDate": "2026-10-08",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "Hello, it's Sarah Whitfield. I wanted to ask how the searches are going on Meadow Road."
+    },
+    {
+      "startSeconds": 7.5,
+      "channel": 1,
+      "text": "Hello Sarah. We ordered the local authority search and the drainage and water search on Monday. The results should be back by Friday the 16th of October."
+    },
+    {
+      "startSeconds": 19.0,
+      "channel": 0,
+      "text": "Okay. Is there anything you need from me?"
+    },
+    {
+      "startSeconds": 23.5,
+      "channel": 1,
+      "text": "Yes, we still need your photo ID and proof of address. Could you send those over by tomorrow?"
+    },
+    {
+      "startSeconds": 31.0,
+      "channel": 0,
+      "text": "I'll email them tomorrow morning."
+    },
+    {
+      "startSeconds": 35.0,
+      "channel": 1,
+      "text": "Thank you. I'll chase the search provider on Wednesday if we've not heard anything."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["id", "identification", "proof of address"]],
+        "owner": ["caller"],
+        "due": ["2026-10-09"]
+      },
+      {
+        "match": [["chase"], ["search"]],
+        "owner": ["fee_earner"],
+        "due": ["2026-10-14"]
+      }
+    ],
+    "keyDates": [
+      {
+        "date": "2026-10-16"
+      }
+    ],
+    "mustMention": [["search"]],
+    "mustNotMention": ["exchange", "mortgage"],
+    "alsoAllowDates": []
+  }
+}

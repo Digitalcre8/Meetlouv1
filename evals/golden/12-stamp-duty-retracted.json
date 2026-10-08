@@ -1,0 +1,46 @@
+{
+  "id": "12-stamp-duty-retracted",
+  "description": "A figure is stated and then retracted. It must not be reported as the amount owed.",
+  "callDate": "2026-11-02",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 0,
+      "text": "How much stamp duty will I have to pay?"
+    },
+    {
+      "startSeconds": 4.0,
+      "channel": 1,
+      "text": "On a purchase price of three hundred and fifty thousand pounds, as a first time buyer, you'd pay five thousand pounds."
+    },
+    {
+      "startSeconds": 14.0,
+      "channel": 0,
+      "text": "Five thousand? I thought it was zero."
+    },
+    {
+      "startSeconds": 18.0,
+      "channel": 1,
+      "text": "Sorry, the relief threshold depends on the date of exchange. I'll check the current rate and email you the exact figure tomorrow."
+    },
+    {
+      "startSeconds": 27.0,
+      "channel": 0,
+      "text": "Okay, please do."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["check", "email", "confirm", "send"]],
+        "owner": ["fee_earner"],
+        "due": ["2026-11-03"]
+      }
+    ],
+    "keyDates": [],
+    "mustMention": [["stamp duty"]],
+    "mustNotMention": ["£5,000", "5,000 stamp", "pay five thousand", "five thousand pounds stamp"],
+    "alsoAllowDates": []
+  }
+}

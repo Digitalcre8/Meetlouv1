@@ -1,0 +1,62 @@
+{
+  "id": "03-exchange-date-corrected",
+  "description": "Dates agreed, then completion corrected mid-call. Only the corrected date may be reported.",
+  "callDate": "2026-10-13",
+  "channels": 2,
+  "segments": [
+    {
+      "startSeconds": 0.0,
+      "channel": 1,
+      "text": "Good news, the other side's solicitors have agreed to exchange on Friday the 23rd of October."
+    },
+    {
+      "startSeconds": 8.0,
+      "channel": 0,
+      "text": "Great. And completion?"
+    },
+    {
+      "startSeconds": 11.0,
+      "channel": 1,
+      "text": "We've pencilled in Friday the 30th of October for completion."
+    },
+    {
+      "startSeconds": 17.0,
+      "channel": 0,
+      "text": "Is that right? My removals are booked for the Monday after."
+    },
+    {
+      "startSeconds": 23.0,
+      "channel": 1,
+      "text": "Sorry, you're right, I misspoke. Completion is Monday the 2nd of November, not the 30th."
+    },
+    {
+      "startSeconds": 31.0,
+      "channel": 0,
+      "text": "Perfect, thank you."
+    },
+    {
+      "startSeconds": 34.0,
+      "channel": 1,
+      "text": "I'll write to confirm both dates today."
+    }
+  ],
+  "expected": {
+    "actions": [
+      {
+        "match": [["write", "confirm", "letter", "email"]],
+        "owner": ["fee_earner"]
+      }
+    ],
+    "keyDates": [
+      {
+        "date": "2026-10-23"
+      },
+      {
+        "date": "2026-11-02"
+      }
+    ],
+    "mustMention": [["exchange"], ["completion"]],
+    "mustNotMention": ["30 october", "30th of october", "october 30", "30/10"],
+    "alsoAllowDates": ["2026-10-13"]
+  }
+}

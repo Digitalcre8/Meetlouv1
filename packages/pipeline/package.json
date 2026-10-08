@@ -1,0 +1,18 @@
+{
+  "name": "@meetlou/pipeline",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@meetlou/domain": "workspace:*",
+    "@meetlou/providers": "workspace:*",
+    "@supabase/supabase-js": "^2.117.3",
+    "zod": "^4.6.5"
+  }
+}

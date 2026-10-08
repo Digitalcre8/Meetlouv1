@@ -1,0 +1,16 @@
+{
+  "rule-based": {
+    "promptVersion": "rule-based-v1",
+    "metrics": {
+      "cases": 13,
+      "errorRate": 0.154,
+      "criticalErrors": 4,
+      "omissionRate": 0.385,
+      "meanActionRecall": 0.897,
+      "meanActionPrecision": 0.782,
+      "meanDateRecall": 1,
+      "meanDatePrecision": 0.942,
+      "meanMentionCoverage": 0.885
+    }
+  }
+}
