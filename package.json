@@ -21,7 +21,8 @@
     "functions:serve": "pnpm --silent --filter @meetlou/harness harness serve",
     "deno:check": "bash scripts/deno-check.sh",
     "eval": "pnpm --silent --filter @meetlou/harness harness eval",
-    "timeline:demo": "pnpm --silent --filter @meetlou/harness harness timeline-demo"
+    "timeline:demo": "pnpm --silent --filter @meetlou/harness harness timeline-demo",
+    "retention:run": "pnpm --silent --filter @meetlou/retention job"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

@@ -134,7 +134,21 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
 
-  packages/retention: {}
+  packages/retention:
+    dependencies:
+      '@meetlou/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@supabase/supabase-js':
+        specifier: ^2.117.3
+        version: 2.117.3
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   supabase/tests:
     dependencies:
@@ -156,6 +170,9 @@ importers:
       '@meetlou/records':
         specifier: workspace:*
         version: link:../../packages/records
+      '@meetlou/retention':
+        specifier: workspace:*
+        version: link:../../packages/retention
       '@supabase/supabase-js':
         specifier: ^2.117.3
         version: 2.117.3

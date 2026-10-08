@@ -75,7 +75,7 @@ packages/providers/  Transcriber and Summariser interfaces, the summary zod sche
 packages/access/     Recording access handler: authenticate, check visibility under RLS, audit, then sign. No recording is served any other way.
 packages/pipeline/   Transcribe -> store -> summarise -> store, as versions; the job runner. Knows nothing about which model is behind the interfaces.
 evals/               Golden transcripts with expected summaries, the committed score baseline, recorded model runs.
-packages/retention/  Retention calculation, legal hold checks, erasure runner.
+packages/retention/  The scheduled job: eligibility is decided by the database, this empties storage and asks for the delete. A script, not an endpoint. Nothing that serves a request may import it.
 tools/harness/       Local CLI that signs and replays fixtures against a local stack.
 fixtures/            twilio/ and sendgrid/ webhook payloads, synthetic only. No real personal data, ever.
 supabase/migrations/ NNNN_name.sql, append-only.
@@ -102,6 +102,7 @@ pnpm harness make-audio    # regenerate the deterministic WAV fixtures
 pnpm harness list     # fixtures and scenarios;  pnpm harness replay <fixture|scenario> [--tamper|--unsigned]
 pnpm eval [rule-based|oracle|anthropic]   # score a summariser on the golden set (evals/golden); `anthropic --record` spends money
 pnpm deno:check       # type-check the Deno edge functions
+pnpm retention:run   # the scheduled retention job (needs SUPABASE_URL, RETENTION_JWT, SUPABASE_SERVICE_ROLE_KEY); run from a scheduler, never from a route
 pnpm timeline:demo   # fill MTR-1001 with a realistic timeline through the real capture paths (local only)
 pnpm seed        # Armstrong & Co / MTR-1001 on the local stack; idempotent; refuses non-local URLs
 ```
@@ -161,6 +162,7 @@ Taken, recorded so they are not re-litigated:
 - **Append-only is enforced in Postgres**, not just by convention (triggers + grants), so it holds even against a leaked service role key.
 - **Assignment to a matter is itself a fact**: an insert-only `matter_assignments` row, not a mutable `matter_id`. Unassigned capture is held at firm level.
 - **Consent is decided before the call row exists**: the `calls` row is written when the consent outcome is known, and recording TwiML can only be built from a persisted consented call.
+- **Deletion has one path.** `retention_runner` is the only role that can delete (policies require an open erasure run on an unheld matter, which only `begin_erasure()` writes). The job is a scheduled script, not an HTTP endpoint. A closure date can't start the retention clock earlier than the day it was recorded. Legal hold beats the period and beats an erasure request.
 - **Email threading is a view** over stored raw headers, not a stored column, so late-arriving parents can never require an update.
 
 Open questions are listed at the end of `docs/BUILD-ORDER.md`. Do not resolve them silently.

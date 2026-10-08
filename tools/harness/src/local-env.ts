@@ -32,6 +32,8 @@ export interface LocalEnv {
   apiUrl: string;
   anonKey: string;
   serviceRoleKey: string;
+  /** A token for the retention role: the scheduled job's database credential. */
+  retentionKey: string;
   databaseUrl: string;
 }
 
@@ -53,6 +55,7 @@ export function localEnv(): LocalEnv {
     anonKey: process.env['SUPABASE_ANON_KEY'] ?? signJwt(secret, claims('anon')),
     serviceRoleKey:
       process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? signJwt(secret, claims('service_role')),
+    retentionKey: process.env['RETENTION_JWT'] ?? signJwt(secret, claims('retention_runner')),
     databaseUrl:
       process.env['MEETLOU_TEST_DATABASE_URL'] ??
       'postgresql://postgres:postgres@127.0.0.1:54322/postgres',
