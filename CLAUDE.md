@@ -89,6 +89,8 @@ pnpm lint        # eslint, strictTypeChecked; no-explicit-any, no-console are er
 pnpm typecheck
 pnpm test        # vitest, all workspaces
 pnpm guards      # scripts/check-guards.sh: service-role-in-browser, migration numbering/immutability
+pnpm db:up       # throwaway Supabase Postgres on :54322 with all migrations applied (needs Docker)
+pnpm db:test     # RLS, append-only and idempotency tests against that database
 ```
 
 CI (`.github/workflows/ci.yml`) runs exactly `pnpm verify`'s steps. If it passes locally, it passes in CI.

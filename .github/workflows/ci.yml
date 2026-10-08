@@ -35,6 +35,18 @@ jobs:
           GUARD_BASE_REF: origin/${{ github.base_ref || 'main' }}
         run: pnpm guards
 
-  # Added in milestone M1, when the first migration exists: start the local Supabase
-  # stack (`supabase start`), apply migrations, run RLS and append-only tests.
-  # Needs no hosted credentials; the CLI generates throwaway keys for the local stack.
+  # Applies every migration to a throwaway Supabase Postgres (the image `supabase start`
+  # uses) and runs the RLS / append-only suite. No hosted credentials involved.
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:up
+      - run: pnpm db:test
