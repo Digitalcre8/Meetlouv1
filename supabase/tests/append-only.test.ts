@@ -210,19 +210,19 @@ describe('idempotency keys', () => {
 
 describe('matter routing identifiers', () => {
   it('inbound_slug is a readable prefix plus 96 random bits', () => {
-    expect(a.inboundSlug).toMatch(/^ao-0001-[0-9a-f]{24}$/);
+    expect(a.inboundSlug).toMatch(/^1teststreet-[0-9a-f]{24}$/);
   });
 
   it('inbound_slug is generated and cannot be chosen by the caller', async () => {
     const rows = await run<{ inbound_slug: string }>(
       service,
       `insert into matters (firm_id, reference, kind, property_address, inbound_slug)
-       values ($1, 'Weak Slug 1', 'sale', '3 Test Street', 'guessable-000000000000000000000000')
+       values ($1, 'Weak Slug 1', 'sale', '3 Test Street, Testville', 'guessable-000000000000000000000000')
        returning inbound_slug`,
       [a.firmId],
       { commit: true },
     );
-    expect(rows[0]?.inbound_slug).toMatch(/^weak-slug-1-[0-9a-f]{24}$/);
+    expect(rows[0]?.inbound_slug).toMatch(/^3teststreet-[0-9a-f]{24}$/);
     expect(rows[0]?.inbound_slug).not.toContain('guessable');
   });
 

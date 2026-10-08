@@ -69,6 +69,8 @@ apps/web/            Next.js 15. Anon key + RLS only. One internal timeline page
 packages/domain/     Types, zod schemas, constants, clock, redacting logger. No I/O.
 packages/capture/    Webhook handlers as (Request, Deps) => Response; consent, signature
                      checks, threading, WAV header parsing. Web-standard APIs only (runs in Deno and Node).
+packages/records/    Server-side helpers: createMatter, createParticipant, getSessionFirm (any client, RLS-bound).
+                     `@meetlou/records/admin` (createFirm, createFeeEarner) needs the service role: never import it from apps/web.
 packages/providers/  Transcriber and Summariser interfaces + deterministic fakes. Vendor adapters live here.
 packages/retention/  Retention calculation, legal hold checks, erasure runner.
 tools/harness/       Local CLI that signs and replays fixtures against a local stack.
@@ -89,8 +91,9 @@ pnpm lint        # eslint, strictTypeChecked; no-explicit-any, no-console are er
 pnpm typecheck
 pnpm test        # vitest, all workspaces
 pnpm guards      # scripts/check-guards.sh: service-role-in-browser, migration numbering/immutability
-pnpm db:up       # throwaway Supabase Postgres on :54322 with all migrations applied (needs Docker)
-pnpm db:test     # RLS, append-only and idempotency tests against that database
+pnpm db:up       # throwaway local Supabase (Postgres :54322, GoTrue + PostgREST behind http://127.0.0.1:54321), migrations applied (needs Docker)
+pnpm db:test     # auth, RLS, append-only, seed and slug tests against that stack
+pnpm seed        # Armstrong & Co / MTR-1001 on the local stack; idempotent; refuses non-local URLs
 ```
 
 CI (`.github/workflows/ci.yml`) runs exactly `pnpm verify`'s steps. If it passes locally, it passes in CI.
@@ -146,3 +149,9 @@ Taken, recorded so they are not re-litigated:
 - **Email threading is a view** over stored raw headers, not a stored column, so late-arriving parents can never require an update.
 
 Open questions are listed at the end of `docs/BUILD-ORDER.md`. Do not resolve them silently.
+
+## The seed matter
+
+Every later test builds on `seedArmstrong()` (`@meetlou/harness`, or `pnpm seed`): firm **Armstrong & Co** (mail domain `matters.armstrongco.co.uk`), fee earner `fee.earner@example.org`, matter **MTR-1001**, 14 Meadow Road, Sale M33 2QX (purchase), participants Sarah Whitfield (client) and Priya Nandra (estate agent, `chain` access, no documents). Its `inbound_slug` is generated per database (`14meadowroad-<24 hex>`), so tests read it from the seed result and never hard-code it.
+
+Auth: sign-in is email and password through Supabase Auth. **Public sign-up is disabled**; logins are created by the operator (`createFeeEarner`). The web app only ever holds the anon key and the user's session cookie.

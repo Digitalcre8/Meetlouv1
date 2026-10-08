@@ -5,6 +5,17 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
-  }
+    "test": "vitest run --passWithNoTests",
+    "seed": "tsx src/seed-cli.ts"
+  },
+  "dependencies": {
+    "@meetlou/domain": "workspace:*",
+    "@meetlou/records": "workspace:*",
+    "@supabase/supabase-js": "^2.117.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  },
+  "main": "./src/index.ts"
 }

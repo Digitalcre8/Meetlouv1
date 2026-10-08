@@ -11,6 +11,11 @@ if grep -rIn --exclude-dir=node_modules --exclude-dir=.next \
   echo "GUARD FAIL: apps/web must not reference the service role key." >&2
   fail=1
 fi
+if grep -rIn --exclude-dir=node_modules --exclude-dir=.next \
+  -e '@meetlou/records/admin' -e '@meetlou/harness' apps/web 2>/dev/null; then
+  echo "GUARD FAIL: apps/web must not import the operator (service role) helpers." >&2
+  fail=1
+fi
 if grep -rIn -E 'NEXT_PUBLIC_[A-Z_]*(SERVICE|SECRET|TOKEN)' \
   --exclude-dir=node_modules --exclude-dir=.next --exclude=.env.example . 2>/dev/null; then
   echo "GUARD FAIL: secrets must never carry the NEXT_PUBLIC_ prefix." >&2

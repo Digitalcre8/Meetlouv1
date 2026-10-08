@@ -8,3 +8,5 @@ coverage
 supabase/.branches
 supabase/.temp
 *.log
+.local
+apps/web/next-env.d.ts

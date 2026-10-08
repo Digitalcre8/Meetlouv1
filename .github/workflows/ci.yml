@@ -30,13 +30,19 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Build web app
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder
+        run: pnpm --filter @meetlou/web build
       - name: Repo guards
         env:
           GUARD_BASE_REF: origin/${{ github.base_ref || 'main' }}
         run: pnpm guards
 
-  # Applies every migration to a throwaway Supabase Postgres (the image `supabase start`
-  # uses) and runs the RLS / append-only suite. No hosted credentials involved.
+  # Brings up throwaway Postgres + GoTrue + PostgREST (the images `supabase start` uses),
+  # applies every migration, seeds, and runs the auth / RLS / append-only suite.
+  # No hosted credentials involved.
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -49,4 +55,6 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:up
+      - name: Seed runs cleanly on a fresh database
+        run: pnpm seed
       - run: pnpm db:test

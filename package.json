@@ -15,7 +15,8 @@
     "guards": "bash scripts/check-guards.sh",
     "verify": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm guards",
     "db:up": "bash scripts/db-up.sh",
-    "db:test": "pnpm --filter @meetlou/db-tests test:db"
+    "db:test": "pnpm --filter @meetlou/db-tests test:db",
+    "seed": "pnpm --filter @meetlou/harness seed"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
