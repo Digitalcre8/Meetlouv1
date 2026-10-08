@@ -191,8 +191,8 @@ describe('documents', () => {
     const unsharedEmail = await run<{ id: string }>(
       { role: 'service_role' },
       `insert into emails (firm_id, matter_id, message_id, from_address, raw_storage_path, raw_sha256)
-       values ($1, $2, 'unshared@example.org', 'x@example.org', 'p', $3) returning id`,
-      [a.firmId, a.matterId, 'c'.repeat(64)],
+       values ($1, $2, 'unshared@example.org', 'x@example.org', $4, $3) returning id`,
+      [a.firmId, a.matterId, 'c'.repeat(64), `${a.firmId}/${a.matterId}/unshared`],
       { commit: true },
     );
     const emailId = unsharedEmail[0]?.id;
@@ -201,8 +201,8 @@ describe('documents', () => {
       { role: 'service_role' },
       `insert into attachments (firm_id, matter_id, email_id, ordinal, filename, content_type,
                                 byte_length, sha256, storage_path)
-       values ($1, $2, $3, 0, 'private.pdf', 'application/pdf', 1, $4, 'p') returning id`,
-      [a.firmId, a.matterId, emailId, 'd'.repeat(64)],
+       values ($1, $2, $3, 0, 'private.pdf', 'application/pdf', 1, $4, $5) returning id`,
+      [a.firmId, a.matterId, emailId, 'd'.repeat(64), `${a.firmId}/${a.matterId}/private`],
       { commit: true },
     );
     const unsharedId = unshared[0]?.id;

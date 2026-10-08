@@ -32,6 +32,20 @@ export function ukDate(moment: Date): string {
 const TRANSIENT = new Set(['unavailable']);
 
 /** Permanent failures are parked with an audit row; transient ones are simply tried again. */
+/**
+ * Non-negotiable 11: a job reads only objects under its own matter's folder, whatever a row says.
+ * A path outside it is never retried (it cannot become right) and nothing is sent to a provider.
+ */
+export function ownsObject(job: { firmId: string; matterId: string }, path: string): boolean {
+  return path.startsWith(`${job.firmId}/${job.matterId}/`);
+}
+
+function assertOwnObject(job: { firmId: string; matterId: string }, path: string): void {
+  if (!ownsObject(job, path)) {
+    throw new ProviderError('invalid_output', 'object is outside this matter');
+  }
+}
+
 function classify(error: unknown): { reason: string; parked: boolean } {
   if (error instanceof ProviderError)
     return { reason: error.code, parked: !TRANSIENT.has(error.code) };
@@ -53,6 +67,7 @@ export async function transcribeRecording(
   let transcript: TranscriptRef;
   let count: number | null;
   try {
+    assertOwnObject(job, job.storagePath);
     const audio = await blobs.get('recordings', job.storagePath);
     if (audio === null) throw new ProviderError('unavailable', 'recording audio is not in storage');
 
@@ -141,6 +156,7 @@ export async function summariseTranscript(
   const { store, blobs, summariser } = deps;
   const logger = deps.logger ?? silentLogger;
   try {
+    assertOwnObject(job, transcript.bodyStoragePath);
     const body = await blobs.get('transcripts', transcript.bodyStoragePath);
     if (body === null) throw new ProviderError('unavailable', 'transcript is not in storage');
     const stored = storedTranscriptSchema.parse(JSON.parse(new TextDecoder().decode(body)));

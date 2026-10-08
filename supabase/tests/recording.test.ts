@@ -216,8 +216,16 @@ describe('recording-status: dual-channel, verified from the bytes', () => {
         service,
         `insert into transcripts (firm_id, matter_id, call_recording_id, provider, provider_job_id,
                                   diarised, speaker_count, body_storage_path, sha256)
-         values ($1, $2, $3, 'fake', $4, $5, 2, 'transcripts/x', $6)`,
-        [seed.firm.id, matterId, row?.id, randomUUID(), diarised, 'c'.repeat(64)],
+         values ($1, $2, $3, 'fake', $4, $5, 2, $7, $6)`,
+        [
+          seed.firm.id,
+          matterId,
+          row?.id,
+          randomUUID(),
+          diarised,
+          'c'.repeat(64),
+          `${seed.firm.id}/${matterId}/t.json`,
+        ],
       );
     await expect(transcript(true)).rejects.toThrow(
       /mono recording cannot be described as diarised/,
@@ -237,8 +245,8 @@ describe('recording-status: dual-channel, verified from the bytes', () => {
         service,
         `insert into transcripts (firm_id, matter_id, call_recording_id, provider, provider_job_id,
                                   diarised, speaker_count, body_storage_path, sha256)
-         values ($1, $2, $3, 'fake', 'job-1', true, 2, 'transcripts/x', $4)`,
-        [seed.firm.id, matterId, row?.id, 'd'.repeat(64)],
+         values ($1, $2, $3, 'fake', 'job-1', true, 2, $5, $4)`,
+        [seed.firm.id, matterId, row?.id, 'd'.repeat(64), `${seed.firm.id}/${matterId}/t.json`],
       ),
     ).resolves.toBeDefined();
   });
@@ -380,8 +388,17 @@ describe('recording-status: guards set a reason and delete nothing', () => {
         service,
         `insert into transcripts (firm_id, matter_id, call_recording_id, provider, provider_job_id,
                                   diarised, speaker_count, body_storage_path, sha256, version)
-         values ($1, $2, $3, 'fake', $4, true, $5, 'transcripts/x', $6, $7)`,
-        [seed.firm.id, matterId, row?.id, job, speakers, 'e'.repeat(64), version],
+         values ($1, $2, $3, 'fake', $4, true, $5, $8, $6, $7)`,
+        [
+          seed.firm.id,
+          matterId,
+          row?.id,
+          job,
+          speakers,
+          'e'.repeat(64),
+          version,
+          `${seed.firm.id}/${matterId}/t.json`,
+        ],
         { commit: true },
       );
 

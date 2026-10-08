@@ -53,6 +53,7 @@ If something out of scope looks necessary to make something in scope work, **sto
 8. **Every webhook authenticates itself.** Twilio by signature; SendGrid Inbound Parse by a long random secret in the URL path, compared in constant time. Each needs a test proving a bad one is rejected.
 9. **The service role key never reaches the browser.** The client uses the anon key and RLS. A test must prove a user of firm A cannot read firm B's matters.
 10. **Never log secrets, recording URLs, transcripts or email bodies.** Log identifiers and outcomes.
+11. **Matters are never matched, merged, deduplicated or linked across firms — not by address, postcode, title number, client name, phone or email — and not between two matters inside one firm either.** Each firm is a separate controller, and Lou is a separate processor for each. Any future cross-firm sharing will be a separate, explicit model that both firms opt into, carrying chain-level progress only, never content. Until that model exists, no code path reads data from one firm in the context of another.
 
 ## Domain language
 

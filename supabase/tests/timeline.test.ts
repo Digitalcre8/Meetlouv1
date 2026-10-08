@@ -350,7 +350,7 @@ describe('every capture writes exactly one event, with the right visibility', ()
     const again = await admin.rpc('ingest_recording', {
       p_call_id: m.callClient,
       p_recording_sid: sid,
-      p_storage_path: 'x',
+      p_storage_path: `${seed.firm.id}/${m.matterId}/${sid}.wav`,
       p_sha256: 'b'.repeat(64),
       p_byte_length: 1,
       p_duration_seconds: 600,
@@ -379,7 +379,7 @@ describe('every capture writes exactly one event, with the right visibility', ()
       p_diarised: true,
       p_speaker_count: 2,
       p_language: null,
-      p_body_storage_path: 'x',
+      p_body_storage_path: `${seed.firm.id}/${m.matterId}/t.json`,
       p_sha256: 'c'.repeat(64),
     });
     expect(await count(`select count(*) n from events where matter_id = $1`, [m.matterId])).toBe(

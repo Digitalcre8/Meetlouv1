@@ -2,7 +2,8 @@ import type { PostgrestError } from '@supabase/supabase-js';
 import type { ZodError } from 'zod';
 import { err } from '@meetlou/domain';
 
-export type RecordErrorCode = 'invalid_input' | 'not_permitted' | 'conflict' | 'database';
+export type RecordErrorCode =
+  'invalid_input' | 'not_permitted' | 'conflict' | 'database' | 'ambiguous_firm';
 
 export interface RecordError {
   code: RecordErrorCode;

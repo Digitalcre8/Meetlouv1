@@ -43,20 +43,36 @@ export interface SessionFirm {
   role: FirmRole;
 }
 
-/** The firm the signed-in user belongs to, or null if they have no firm (or no session). */
+/**
+ * The firm the signed-in user belongs to, or null if they have no firm (or no session).
+ *
+ * A login that belongs to more than one firm is refused (`ambiguous_firm`) rather than quietly
+ * given the oldest one: each firm is a separate controller (non-negotiable 11), and acting for
+ * the wrong one is exactly the mistake that must not be possible by default.
+ */
 export async function getSessionFirm(
   db: SupabaseClient,
 ): Promise<Result<SessionFirm | null, RecordError>> {
+  // Members can read each other's rows in their own firm, so ask for THIS user's memberships.
+  const session = await db.auth.getUser();
+  if (session.error !== null) return ok(null);
   const membership = await db
     .from('firm_users')
     .select('firm_id, role')
+    .eq('user_id', session.data.user.id)
     .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(2);
   if (membership.error !== null) return fromPostgrest(membership.error);
-  if (membership.data === null) return ok(null);
+  const rows = membership.data as unknown[];
+  if (rows.length === 0) return ok(null);
+  if (rows.length > 1) {
+    return err<RecordError>({
+      code: 'ambiguous_firm',
+      message: 'this login belongs to more than one firm',
+    });
+  }
 
-  const parsed = z.object({ firm_id: z.uuid(), role: firmRole }).parse(membership.data);
+  const parsed = z.object({ firm_id: z.uuid(), role: firmRole }).parse(rows[0]);
   const firm = await db
     .from('firms')
     .select('id, name, mail_domain')

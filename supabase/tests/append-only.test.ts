@@ -173,8 +173,8 @@ describe('idempotency keys', () => {
       run(
         service,
         `insert into emails (firm_id, matter_id, message_id, from_address, raw_storage_path, raw_sha256)
-         values ($1, $2, $3, 'x@example.org', 'p', $4)`,
-        [a.firmId, a.matterId, id, 'e'.repeat(64)],
+         values ($1, $2, $3, 'x@example.org', $5, $4)`,
+        [a.firmId, a.matterId, id, 'e'.repeat(64), `${a.firmId}/${a.matterId}/raw`],
         { commit: true },
       );
     await insert(messageId);

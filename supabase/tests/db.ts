@@ -97,7 +97,10 @@ async function insertOne(sql: string, params: unknown[]): Promise<string> {
 }
 
 /** A firm with a fee earner, one matter, and one of everything on it. */
-export async function seedFirm(label: string): Promise<FirmSeed> {
+export async function seedFirm(
+  label: string,
+  options: { address?: string } = {},
+): Promise<FirmSeed> {
   const feeEarnerId = await createUser(`fee-earner-${label}`);
   const firmId = await insertOne(`insert into firms (name) values ($1) returning id`, [
     `Firm ${label}`,
@@ -113,8 +116,8 @@ export async function seedFirm(label: string): Promise<FirmSeed> {
     await run<{ id: string; inbound_slug: string }>(
       service,
       `insert into matters (firm_id, reference, kind, property_address, line_e164)
-       values ($1, $2, 'purchase', '1 Test Street, Testville', $3) returning id, inbound_slug`,
-      [firmId, `${label}-0001`, lineE164],
+       values ($1, $2, 'purchase', $4, $3) returning id, inbound_slug`,
+      [firmId, `${label}-0001`, lineE164, options.address ?? '1 Test Street, Testville'],
       { commit: true },
     )
   )[0];
@@ -130,14 +133,20 @@ export async function seedFirm(label: string): Promise<FirmSeed> {
   const emailId = await insertOne(
     `insert into emails (firm_id, matter_id, message_id, from_address, subject,
                          raw_storage_path, raw_sha256)
-     values ($1, $2, $3, 'sender@example.org', 'Subject', 'emails/x/raw.eml', $4) returning id`,
-    [firmId, matterId, `${randomUUID()}@example.org`, 'a'.repeat(64)],
+     values ($1, $2, $3, 'sender@example.org', 'Subject', $5, $4) returning id`,
+    [
+      firmId,
+      matterId,
+      `${randomUUID()}@example.org`,
+      'a'.repeat(64),
+      `${firmId}/${matterId}/raw.eml`,
+    ],
   );
   const attachmentId = await insertOne(
     `insert into attachments (firm_id, matter_id, email_id, ordinal, filename, content_type,
                               byte_length, sha256, storage_path)
-     values ($1, $2, $3, 0, 'TA6.pdf', 'application/pdf', 10, $4, 'attachments/x') returning id`,
-    [firmId, matterId, emailId, 'b'.repeat(64)],
+     values ($1, $2, $3, 0, 'TA6.pdf', 'application/pdf', 10, $4, $5) returning id`,
+    [firmId, matterId, emailId, 'b'.repeat(64), `${firmId}/${matterId}/${'b'.repeat(64)}`],
   );
 
   const event = (kind: string, visibility: string, subject?: { kind: string; id: string }) =>

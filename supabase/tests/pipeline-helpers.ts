@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { FIXTURES_DIR, serviceClient } from '@meetlou/harness';
-import type { LocalEnv, SeedResult } from '@meetlou/harness';
+import type { LocalEnv } from '@meetlou/harness';
 import { SupabaseBlobStore, SupabasePipelineStore } from '@meetlou/pipeline';
 import type { PipelineDeps, RecordingJob, TranscriptRef } from '@meetlou/pipeline';
 import { FakeSummariser, FakeTranscriber } from '@meetlou/providers';
@@ -37,7 +37,7 @@ export interface RecordedCall {
 /** A fresh matter with a consented call and a stored recording (and its audio in the bucket). */
 export async function recordedCall(
   env: LocalEnv,
-  seed: SeedResult,
+  seed: { firm: { id: string } },
   options: { channels?: 1 | 2; duration?: number } = {},
 ): Promise<RecordedCall> {
   const channels = options.channels ?? 2;
